@@ -1,12 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { ProjectCirclesApp } from "./app/ProjectCirclesApp";
 import { registerServiceWorker } from "./app/registerServiceWorker";
+import { App } from "./App";
 import "./styles.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <ProjectCirclesApp />
+    <App />
   </React.StrictMode>
 );
 

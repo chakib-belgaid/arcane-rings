@@ -4,9 +4,11 @@ node_modules/
 .uv-cache/
 dist/
 coverage/
+output/
 test-results/
 playwright-report/
 .vite/
+.DS_Store
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
