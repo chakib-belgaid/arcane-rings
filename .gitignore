@@ -1,5 +1,8 @@
 node_modules/
+.venv/
+.uv-cache/
 dist/
+coverage/
 test-results/
 playwright-report/
 *.tsbuildinfo
