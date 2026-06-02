@@ -1,0 +1,17 @@
+{
+  "name": "Project Circles",
+  "short_name": "Circles",
+  "description": "Restore circular images by aligning coupled rotating rings.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1018",
+  "theme_color": "#0b1018",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
