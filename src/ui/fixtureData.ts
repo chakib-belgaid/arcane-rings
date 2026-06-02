@@ -1,4 +1,4 @@
-import { CollectionItem, DifficultyTrack, LevelCard, PuzzleLevelFixture } from "./types";
+import { CollectionItem, DifficultyTrack, LevelCard, PuzzleImageSource, PuzzleLevelFixture } from "./types";
 import { WinResult } from "./screens/WinScreen";
 
 export const difficultyTracks: DifficultyTrack[] = [
@@ -91,16 +91,40 @@ export const fixtureLevel: PuzzleLevelFixture = {
   ],
 };
 
-export const collectionItems: CollectionItem[] = [
+export const defaultImagePresets: PuzzleImageSource[] = [
   {
-    id: "moon-gate",
+    id: "moon-gate-archive",
     title: "Moon Gate Archive",
+    src: "/presets/moon-gate-archive.png",
+    source: "preset",
     stars: 3,
     difficulty: "medium",
     bestMoves: 24,
     unlockedAt: "2026-06-02",
   },
+  {
+    id: "solar-greenhouse-observatory",
+    title: "Solar Greenhouse Observatory",
+    src: "/presets/solar-greenhouse-observatory.png",
+    source: "preset",
+    stars: 0,
+    difficulty: "easy",
+    bestMoves: null,
+    unlockedAt: "Default",
+  },
+  {
+    id: "neon-tidal-city",
+    title: "Neon Tidal City",
+    src: "/presets/neon-tidal-city.png",
+    source: "preset",
+    stars: 0,
+    difficulty: "hard",
+    bestMoves: null,
+    unlockedAt: "Default",
+  },
 ];
+
+export const collectionItems: CollectionItem[] = defaultImagePresets;
 
 export const winResult: WinResult = {
   title: "Moon Gate Restored",

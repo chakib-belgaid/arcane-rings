@@ -222,6 +222,20 @@ p {
   gap: 12px;
 }
 
+.collection-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+.collection-error {
+  margin: -4px 0 12px;
+  color: #ffd6d2;
+  font-size: 0.9rem;
+}
+
 .track-row,
 .level-card,
 .collection-item {
@@ -277,6 +291,42 @@ p {
   padding: 12px;
 }
 
+.collection-item--button {
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.collection-item--button:hover,
+.collection-item--button:focus-visible,
+.collection-item--selected {
+  border-color: var(--pc-border-strong);
+  background: rgba(23, 34, 42, 0.96);
+}
+
+.collection-item--button:focus-visible {
+  outline: 2px solid var(--pc-amber);
+  outline-offset: 2px;
+}
+
+.collection-copy {
+  min-width: 0;
+}
+
+.collection-selected {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: var(--pc-amber);
+}
+
 .level-card--locked {
   opacity: 0.68;
 }
@@ -316,6 +366,18 @@ p {
 .thumb-rings::after {
   inset: 38%;
   border-color: rgba(215, 168, 79, 0.45);
+}
+
+.collection-thumb {
+  overflow: hidden;
+}
+
+.collection-thumb img,
+.reference-thumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .level-meta,
@@ -405,6 +467,8 @@ p {
   background: rgba(11, 16, 20, 0.76);
   display: grid;
   place-items: center;
+  overflow: hidden;
+  padding: 0;
 }
 
 .hint-toast {

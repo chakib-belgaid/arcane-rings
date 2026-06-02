@@ -51,3 +51,35 @@ test("win screen exposes scoring and next action", async ({ page }) => {
   await expect(page.getByText("Optimal ticks 22")).toBeVisible();
   await expect(page.getByRole("button", { name: "Next level" })).toBeVisible();
 });
+
+test("image collection supports generated presets and image upload", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Image collection" }).click();
+
+  await expect(page.getByRole("button", { name: "Select Moon Gate Archive" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Select Solar Greenhouse Observatory" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Select Neon Tidal City" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Select Solar Greenhouse Observatory" }).click();
+  await page.getByRole("button", { name: "Play selected image" }).click();
+  await expect(page.getByTestId("puzzle-stage")).toHaveAttribute(
+    "data-image-title",
+    "Solar Greenhouse Observatory",
+  );
+
+  await page.getByRole("button", { name: "Return to main menu" }).click();
+  await page.getByRole("button", { name: "Image collection" }).click();
+  await page.getByTestId("image-upload-input").setInputFiles({
+    name: "playwright-upload.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=",
+      "base64",
+    ),
+  });
+
+  await expect(page.getByRole("button", { name: "Select playwright upload" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+});

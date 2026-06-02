@@ -5,19 +5,28 @@ import { CouplingMapDialog } from "../coupling-map/CouplingMapDialog";
 import { IconButton } from "../components/IconButton";
 import { PuzzleHud } from "../hud/PuzzleHud";
 import { PuzzleLevelFixture } from "../types";
-import { sampleImageDataUrl } from "../../fixtures/sampleImage";
 import { modNorm } from "../../interaction/pointerDrag";
 import { PuzzleCanvas, type PuzzleCanvasCommit } from "../../render/PuzzleCanvas";
 
 type PuzzleScreenProps = {
   level: PuzzleLevelFixture;
+  imageSrc: string;
+  imageTitle: string;
   inputBlocked: boolean;
   onMenu: () => void;
   onSettings: () => void;
   onFixtureComplete: () => void;
 };
 
-export function PuzzleScreen({ level, inputBlocked, onMenu, onSettings, onFixtureComplete }: PuzzleScreenProps) {
+export function PuzzleScreen({
+  level,
+  imageSrc,
+  imageTitle,
+  inputBlocked,
+  onMenu,
+  onSettings,
+  onFixtureComplete,
+}: PuzzleScreenProps) {
   const [couplingOpen, setCouplingOpen] = useState(false);
   const [hintLayer, setHintLayer] = useState(0);
   const [referenceVisible, setReferenceVisible] = useState(level.showReferenceThumbnail);
@@ -48,12 +57,17 @@ export function PuzzleScreen({ level, inputBlocked, onMenu, onSettings, onFixtur
   };
 
   return (
-    <main className="puzzle-screen" data-testid="puzzle-stage" data-input-gated={String(inputGated)}>
+    <main
+      className="puzzle-screen"
+      data-testid="puzzle-stage"
+      data-input-gated={String(inputGated)}
+      data-image-title={imageTitle}
+    >
       <IconButton icon={ArrowLeft} label="Return to main menu" onClick={onMenu} className="puzzle-back" />
-      <section className="puzzle-visual-wrap" aria-label={level.title}>
+      <section className="puzzle-visual-wrap" aria-label={`${level.title}: ${imageTitle}`}>
         <div className="puzzle-visual" data-testid="puzzle-visual">
           <PuzzleCanvas
-            imageSrc={sampleImageDataUrl()}
+            imageSrc={imageSrc}
             offsets={offsets}
             matrix={matrix}
             q={level.ticks}
@@ -63,7 +77,7 @@ export function PuzzleScreen({ level, inputBlocked, onMenu, onSettings, onFixtur
         </div>
         {referenceVisible ? (
           <button className="reference-thumb" type="button" aria-label="Reference thumbnail">
-            <span className="thumb-rings" aria-hidden="true" />
+            <img src={imageSrc} alt="" />
           </button>
         ) : null}
         {hintLayer > 0 ? <div className="hint-toast">Ring 3 still needs adjustment</div> : null}

@@ -76,15 +76,21 @@ export function PuzzleCanvas({
   }, [matrix, offsets, previewTicks, q, selectedRing]);
 
   useEffect(() => {
-    const image = new Image();
+    const image = new window.Image();
     image.decoding = "async";
+    setImageReady(false);
     image.onload = () => {
       imageRef.current = image;
       setImageReady(true);
     };
+    image.onerror = () => {
+      imageRef.current = null;
+      setImageReady(false);
+    };
     image.src = imageSrc;
     return () => {
       image.onload = null;
+      image.onerror = null;
     };
   }, [imageSrc]);
 

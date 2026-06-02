@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MainMenu } from "./ui/screens/MainMenu";
 import { DifficultySelection } from "./ui/screens/DifficultySelection";
 import { LevelSelection } from "./ui/screens/LevelSelection";
@@ -6,16 +6,20 @@ import { ImageCollection } from "./ui/screens/ImageCollection";
 import { PuzzleScreen } from "./ui/screens/PuzzleScreen";
 import { SettingsOverlay } from "./ui/screens/SettingsOverlay";
 import { WinScreen, WinResult } from "./ui/screens/WinScreen";
-import { fixtureLevel, winResult } from "./ui/fixtureData";
-import { DifficultyName } from "./ui/types";
+import { defaultImagePresets, fixtureLevel, winResult } from "./ui/fixtureData";
+import { DifficultyName, PuzzleImageSource } from "./ui/types";
 
 type AppScreen = "menu" | "difficulty" | "levels" | "collection" | "puzzle";
 
 export function App() {
   const [screen, setScreen] = useState<AppScreen>("menu");
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyName>("medium");
+  const [uploadedImages, setUploadedImages] = useState<PuzzleImageSource[]>([]);
+  const [selectedImageId, setSelectedImageId] = useState(defaultImagePresets[0].id);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [result, setResult] = useState<WinResult | null>(null);
+  const imageChoices = useMemo(() => [...defaultImagePresets, ...uploadedImages], [uploadedImages]);
+  const selectedImage = imageChoices.find((image) => image.id === selectedImageId) ?? defaultImagePresets[0];
 
   const openLevels = (difficulty: DifficultyName) => {
     setSelectedDifficulty(difficulty);
@@ -25,6 +29,27 @@ export function App() {
   const startPuzzle = () => {
     setResult(null);
     setScreen("puzzle");
+  };
+
+  const addUploadedImage = (file: File, dataUrl: string) => {
+    const title =
+      file.name
+        .replace(/\.[^.]+$/, "")
+        .replace(/[-_]+/g, " ")
+        .trim() || "Uploaded Image";
+    const uploadedImage: PuzzleImageSource = {
+      id: `upload-${Date.now()}-${file.name}`,
+      title,
+      src: dataUrl,
+      source: "upload",
+      stars: 0,
+      difficulty: "beginner",
+      bestMoves: null,
+      unlockedAt: new Date().toISOString().slice(0, 10),
+    };
+
+    setUploadedImages((images) => [uploadedImage, ...images]);
+    setSelectedImageId(uploadedImage.id);
   };
 
   return (
@@ -51,11 +76,22 @@ export function App() {
         />
       ) : null}
 
-      {screen === "collection" ? <ImageCollection onBack={() => setScreen("menu")} /> : null}
+      {screen === "collection" ? (
+        <ImageCollection
+          images={imageChoices}
+          selectedImageId={selectedImage.id}
+          onBack={() => setScreen("menu")}
+          onSelectImage={setSelectedImageId}
+          onUploadImage={addUploadedImage}
+          onStart={startPuzzle}
+        />
+      ) : null}
 
       {screen === "puzzle" ? (
         <PuzzleScreen
           level={fixtureLevel}
+          imageSrc={selectedImage.src}
+          imageTitle={selectedImage.title}
           inputBlocked={settingsOpen || result !== null}
           onMenu={() => setScreen("menu")}
           onSettings={() => setSettingsOpen(true)}

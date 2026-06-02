@@ -82,8 +82,33 @@ describe("Project Circles menu and overlay UI", () => {
 
     expect(screen.getByRole("heading", { name: "Image Collection" })).toBeTruthy();
     expect(screen.getByText("Moon Gate Archive")).toBeTruthy();
+    expect(screen.getByText("Solar Greenhouse Observatory")).toBeTruthy();
+    expect(screen.getByText("Neon Tidal City")).toBeTruthy();
     expect(screen.getByText("Best moves 24")).toBeTruthy();
     expect(screen.getByText("Unlocked 2026-06-02")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Upload image" })).toBeTruthy();
+  });
+
+  test("selects default presets and uploaded images for play", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Image collection" }));
+    await user.click(screen.getByRole("button", { name: "Select Neon Tidal City" }));
+    await user.click(screen.getByRole("button", { name: "Play selected image" }));
+    expect(screen.getByTestId("puzzle-stage").getAttribute("data-image-title")).toBe("Neon Tidal City");
+
+    await user.click(screen.getByRole("button", { name: "Return to main menu" }));
+    await user.click(screen.getByRole("button", { name: "Image collection" }));
+
+    const file = new File(["custom"], "custom-puzzle.png", { type: "image/png" });
+    await user.upload(screen.getByTestId("image-upload-input"), file);
+
+    expect(await screen.findByText("custom puzzle")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Select custom puzzle" }).getAttribute("aria-pressed")).toBe("true");
+
+    await user.click(screen.getByRole("button", { name: "Play selected image" }));
+    expect(screen.getByTestId("puzzle-stage").getAttribute("data-image-title")).toBe("custom puzzle");
   });
 });
 

@@ -40,11 +40,15 @@ export type PuzzleLevelFixture = {
   edges: CouplingEdge[];
 };
 
-export type CollectionItem = {
+export type PuzzleImageSource = {
   id: string;
   title: string;
+  src: string;
+  source: "preset" | "upload";
   stars: number;
   difficulty: DifficultyName;
-  bestMoves: number;
+  bestMoves: number | null;
   unlockedAt: string;
 };
+
+export type CollectionItem = PuzzleImageSource;
