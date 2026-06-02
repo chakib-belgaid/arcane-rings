@@ -129,9 +129,16 @@ export const collectionItems: CollectionItem[] = defaultImagePresets;
 export const winResult: WinResult = {
   title: "Moon Gate Restored",
   stars: 3,
+  moveCount: 18,
   playerTickCost: 24,
   optimalTickCost: 22,
   elapsedTime: "04:18",
+  elapsedMs: 258000,
   hintCount: 1,
   difficultyScore: "Medium · T22 · F6",
+  bestScore: "18 moves · 24 ticks · 04:18",
+  bestMoveCount: 18,
+  bestTickCost: 24,
+  bestElapsedTime: "04:18",
+  isPersonalBest: true,
 };

@@ -15,6 +15,23 @@ type SourceDimensions = {
   height: number;
 };
 
+const AFFECTED_RING_GLOW = {
+  fill: "rgba(224, 173, 86, 0.14)",
+  lineWidth: 4.6,
+  shadowBlur: 17,
+  shadowColor: "rgba(247, 192, 94, 0.78)",
+  stroke: "rgba(247, 192, 94, 0.74)",
+};
+
+const SELECTED_RING_GLOW = {
+  fill: "rgba(224, 173, 86, 0.2)",
+  lineWidth: 5.8,
+  shadowBlur: 24,
+  shadowColor: "rgba(247, 192, 94, 0.78)",
+  stroke: "rgba(247, 192, 94, 0.98)",
+  strokeHot: "rgba(255, 238, 186, 0.9)",
+};
+
 function sourceDimensions(source: CanvasImageSource): SourceDimensions {
   const candidate = source as {
     naturalWidth?: number;
@@ -56,6 +73,35 @@ function strokeAnnulus(
 ): void {
   context.save();
   context.strokeStyle = color;
+  context.lineWidth = lineWidth;
+  context.beginPath();
+  context.arc(cx, cy, outerRadius, 0, Math.PI * 2);
+  context.stroke();
+  if (innerRadius > 0) {
+    context.beginPath();
+    context.arc(cx, cy, innerRadius, 0, Math.PI * 2);
+    context.stroke();
+  }
+  context.restore();
+}
+
+function glowAnnulus(
+  context: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  innerRadius: number,
+  outerRadius: number,
+  strokeColor: string,
+  shadowColor: string,
+  lineWidth: number,
+  blur: number,
+): void {
+  context.save();
+  context.shadowColor = shadowColor;
+  context.shadowBlur = blur;
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = 0;
+  context.strokeStyle = strokeColor;
   context.lineWidth = lineWidth;
   context.beginPath();
   context.arc(cx, cy, outerRadius, 0, Math.PI * 2);
@@ -131,13 +177,24 @@ export function drawPuzzleRings(
     if (ring === selectedRing || ring < 0 || ring >= ringRadii.length - 1) {
       continue;
     }
+    glowAnnulus(
+      context,
+      cx,
+      cy,
+      ringRadii[ring],
+      ringRadii[ring + 1],
+      AFFECTED_RING_GLOW.stroke,
+      AFFECTED_RING_GLOW.shadowColor,
+      previewTicks === 0 ? 3.4 : AFFECTED_RING_GLOW.lineWidth,
+      previewTicks === 0 ? 13 : AFFECTED_RING_GLOW.shadowBlur,
+    );
     fillAnnulus(
       context,
       cx,
       cy,
       ringRadii[ring],
       ringRadii[ring + 1],
-      "rgba(105, 174, 224, 0.13)",
+      AFFECTED_RING_GLOW.fill,
     );
     strokeAnnulus(
       context,
@@ -145,19 +202,30 @@ export function drawPuzzleRings(
       cy,
       ringRadii[ring],
       ringRadii[ring + 1],
-      "rgba(126, 197, 244, 0.7)",
-      previewTicks === 0 ? 1.8 : 2.4,
+      AFFECTED_RING_GLOW.stroke,
+      previewTicks === 0 ? 1.9 : 2.6,
     );
   }
 
   if (selectedRing !== null && selectedRing >= 0 && selectedRing < ringRadii.length - 1) {
+    glowAnnulus(
+      context,
+      cx,
+      cy,
+      ringRadii[selectedRing],
+      ringRadii[selectedRing + 1],
+      SELECTED_RING_GLOW.stroke,
+      SELECTED_RING_GLOW.shadowColor,
+      SELECTED_RING_GLOW.lineWidth,
+      SELECTED_RING_GLOW.shadowBlur,
+    );
     fillAnnulus(
       context,
       cx,
       cy,
       ringRadii[selectedRing],
       ringRadii[selectedRing + 1],
-      "rgba(224, 173, 86, 0.15)",
+      SELECTED_RING_GLOW.fill,
     );
     strokeAnnulus(
       context,
@@ -165,8 +233,17 @@ export function drawPuzzleRings(
       cy,
       ringRadii[selectedRing],
       ringRadii[selectedRing + 1],
-      "rgba(247, 192, 94, 0.95)",
-      3,
+      SELECTED_RING_GLOW.stroke,
+      3.4,
+    );
+    strokeAnnulus(
+      context,
+      cx,
+      cy,
+      ringRadii[selectedRing],
+      ringRadii[selectedRing + 1],
+      SELECTED_RING_GLOW.strokeHot,
+      1.2,
     );
   }
 
@@ -178,6 +255,8 @@ export function drawPuzzleRings(
 
     context.save();
     context.strokeStyle = "rgba(247, 192, 94, 0.95)";
+    context.shadowBlur = 12;
+    context.shadowColor = SELECTED_RING_GLOW.shadowColor;
     context.lineWidth = 5;
     context.lineCap = "round";
     context.beginPath();

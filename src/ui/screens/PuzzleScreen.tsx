@@ -1,12 +1,14 @@
 import { ArrowLeft } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CouplingMapDialog } from "../coupling-map/CouplingMapDialog";
 import { IconButton } from "../components/IconButton";
+import { ModalShell } from "../components/ModalShell";
 import { PuzzleHud } from "../hud/PuzzleHud";
 import { PuzzleLevelFixture } from "../types";
 import { modNorm } from "../../interaction/pointerDrag";
 import { PuzzleCanvas, type PuzzleCanvasCommit } from "../../render/PuzzleCanvas";
+import type { WinResult } from "./WinScreen";
 
 type PuzzleScreenProps = {
   level: PuzzleLevelFixture;
@@ -15,8 +17,78 @@ type PuzzleScreenProps = {
   inputBlocked: boolean;
   onMenu: () => void;
   onSettings: () => void;
-  onFixtureComplete: () => void;
+  onFixtureComplete: (result: WinResult) => void;
 };
+
+type BestScore = {
+  moveCount: number;
+  tickCost: number;
+  elapsedMs: number;
+};
+
+function formatDuration(milliseconds: number): string {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function bestScoreKey(levelId: string, imageTitle: string): string {
+  return `project-circles:best-score:${levelId}:${imageTitle}`;
+}
+
+function readBestScore(key: string): BestScore | null {
+  try {
+    const stored = window.localStorage.getItem(key);
+    if (!stored) {
+      return null;
+    }
+
+    const parsed = JSON.parse(stored) as Partial<BestScore>;
+    if (typeof parsed.moveCount !== "number" || typeof parsed.elapsedMs !== "number") {
+      return null;
+    }
+
+    return {
+      moveCount: parsed.moveCount,
+      tickCost: typeof parsed.tickCost === "number" ? parsed.tickCost : parsed.moveCount,
+      elapsedMs: parsed.elapsedMs,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeBestScore(key: string, score: BestScore): void {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(score));
+  } catch {
+    // Storage is optional; the report still shows the current session score.
+  }
+}
+
+function chooseBestScore(current: BestScore, previous: BestScore | null): { best: BestScore; isPersonalBest: boolean } {
+  if (!previous) {
+    return { best: current, isPersonalBest: true };
+  }
+
+  const isBetter =
+    current.moveCount < previous.moveCount ||
+    (current.moveCount === previous.moveCount && current.tickCost < previous.tickCost) ||
+    (current.moveCount === previous.moveCount &&
+      current.tickCost === previous.tickCost &&
+      current.elapsedMs < previous.elapsedMs);
+
+  return isBetter ? { best: current, isPersonalBest: true } : { best: previous, isPersonalBest: false };
+}
+
+function formatCount(value: number, singular: string): string {
+  return `${value} ${singular}${value === 1 ? "" : "s"}`;
+}
+
+function formatBestScore(score: BestScore): string {
+  return `${formatCount(score.moveCount, "move")} · ${formatCount(score.tickCost, "tick")} · ${formatDuration(score.elapsedMs)}`;
+}
 
 export function PuzzleScreen({
   level,
@@ -28,10 +100,18 @@ export function PuzzleScreen({
   onFixtureComplete,
 }: PuzzleScreenProps) {
   const [couplingOpen, setCouplingOpen] = useState(false);
+  const [solutionOpen, setSolutionOpen] = useState(false);
   const [hintLayer, setHintLayer] = useState(0);
   const [referenceVisible, setReferenceVisible] = useState(level.showReferenceThumbnail);
   const [offsets, setOffsets] = useState(() => Array.from({ length: level.rings }, () => 0));
-  const inputGated = couplingOpen || inputBlocked;
+  const [moveCount, setMoveCount] = useState(0);
+  const [playerTickCost, setPlayerTickCost] = useState(0);
+  const [hintCount, setHintCount] = useState(0);
+  const [completedAtMs, setCompletedAtMs] = useState<number | null>(null);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const startedAt = useMemo(() => Date.now(), []);
+  const elapsedTime = formatDuration(completedAtMs ?? elapsedMs);
+  const inputGated = couplingOpen || solutionOpen || inputBlocked || completedAtMs !== null;
   const matrix = useMemo(() => {
     const generated: number[][] = Array.from({ length: level.rings }, (_, row) =>
       Array.from({ length: level.rings }, (_, column) => (row === column ? 1 : 0))
@@ -47,14 +127,83 @@ export function PuzzleScreen({
 
     return generated;
   }, [level.edges, level.rings]);
+  const storageKey = useMemo(() => bestScoreKey(level.id, imageTitle), [imageTitle, level.id]);
+
+  useEffect(() => {
+    if (completedAtMs !== null) {
+      return;
+    }
+
+    const updateElapsed = () => setElapsedMs(Date.now() - startedAt);
+    updateElapsed();
+    const intervalId = window.setInterval(updateElapsed, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [completedAtMs, startedAt]);
 
   const handleCommit = ({ controlRing, deltaTicks }: PuzzleCanvasCommit) => {
+    if (deltaTicks === 0) {
+      return;
+    }
+
+    setMoveCount((current) => current + 1);
+    setPlayerTickCost((current) => current + Math.abs(deltaTicks));
     setOffsets((currentOffsets) =>
       currentOffsets.map((offset, ring) =>
         modNorm(offset + (matrix[ring]?.[controlRing] ?? 0) * deltaTicks, level.ticks)
       )
     );
   };
+
+  const handleHint = () => {
+    setHintLayer((layer) => {
+      const nextLayer = Math.min(layer + 1, 3);
+      if (nextLayer !== layer) {
+        setHintCount((count) => count + 1);
+      }
+      return nextLayer;
+    });
+  };
+
+  const handleFixtureComplete = useCallback(() => {
+    const finalElapsedMs = completedAtMs ?? Date.now() - startedAt;
+    const currentScore = { moveCount, tickCost: playerTickCost, elapsedMs: finalElapsedMs };
+    const { best, isPersonalBest } = chooseBestScore(currentScore, readBestScore(storageKey));
+
+    if (isPersonalBest) {
+      writeBestScore(storageKey, best);
+    }
+
+    setCompletedAtMs(finalElapsedMs);
+    onFixtureComplete({
+      title: `${imageTitle} Restored`,
+      stars: moveCount <= level.moves ? 3 : moveCount <= level.moves * 1.5 ? 2 : 1,
+      moveCount,
+      playerTickCost,
+      optimalTickCost: level.moves,
+      elapsedTime: formatDuration(finalElapsedMs),
+      elapsedMs: finalElapsedMs,
+      hintCount,
+      difficultyScore: `${level.difficulty[0].toUpperCase()}${level.difficulty.slice(1)} · ${level.rings}R · ${level.ticks}T`,
+      bestScore: formatBestScore(best),
+      bestMoveCount: best.moveCount,
+      bestTickCost: best.tickCost,
+      bestElapsedTime: formatDuration(best.elapsedMs),
+      isPersonalBest,
+    });
+  }, [
+    completedAtMs,
+    hintCount,
+    imageTitle,
+    level.difficulty,
+    level.moves,
+    level.rings,
+    level.ticks,
+    moveCount,
+    onFixtureComplete,
+    playerTickCost,
+    startedAt,
+    storageKey,
+  ]);
 
   return (
     <main
@@ -76,7 +225,14 @@ export function PuzzleScreen({
           />
         </div>
         {referenceVisible ? (
-          <button className="reference-thumb" type="button" aria-label="Reference thumbnail">
+          <button
+            className="reference-thumb"
+            type="button"
+            aria-label="Open solution reference fullscreen"
+            aria-haspopup="dialog"
+            data-testid="solution-reference-thumb"
+            onClick={() => setSolutionOpen(true)}
+          >
             <img src={imageSrc} alt="" />
           </button>
         ) : null}
@@ -84,14 +240,28 @@ export function PuzzleScreen({
       </section>
       <PuzzleHud
         level={level}
+        moveCount={moveCount}
+        elapsedTime={elapsedTime}
         onUndo={() => undefined}
-        onHint={() => setHintLayer((layer) => Math.min(layer + 1, 3))}
+        onHint={handleHint}
         onToggleReference={() => setReferenceVisible((visible) => !visible)}
         onCouplingMap={() => setCouplingOpen(true)}
         onSettings={onSettings}
-        onFixtureComplete={onFixtureComplete}
+        onFixtureComplete={handleFixtureComplete}
       />
       {couplingOpen ? <CouplingMapDialog edges={level.edges} onClose={() => setCouplingOpen(false)} /> : null}
+      {solutionOpen ? (
+        <ModalShell
+          title="Solution Reference"
+          closeLabel="Close solution reference"
+          onClose={() => setSolutionOpen(false)}
+          className="solution-modal"
+        >
+          <div className="solution-modal__image-wrap">
+            <img src={imageSrc} alt={`${imageTitle} solution reference`} />
+          </div>
+        </ModalShell>
+      ) : null}
     </main>
   );
 }

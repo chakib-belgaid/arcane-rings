@@ -6,7 +6,7 @@ import { ImageCollection } from "./ui/screens/ImageCollection";
 import { PuzzleScreen } from "./ui/screens/PuzzleScreen";
 import { SettingsOverlay } from "./ui/screens/SettingsOverlay";
 import { WinScreen, WinResult } from "./ui/screens/WinScreen";
-import { defaultImagePresets, fixtureLevel, winResult } from "./ui/fixtureData";
+import { defaultImagePresets, fixtureLevel } from "./ui/fixtureData";
 import { DifficultyName, PuzzleImageSource } from "./ui/types";
 
 type AppScreen = "menu" | "difficulty" | "levels" | "collection" | "puzzle";
@@ -18,6 +18,7 @@ export function App() {
   const [selectedImageId, setSelectedImageId] = useState(defaultImagePresets[0].id);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [result, setResult] = useState<WinResult | null>(null);
+  const [puzzleSessionId, setPuzzleSessionId] = useState(0);
   const imageChoices = useMemo(() => [...defaultImagePresets, ...uploadedImages], [uploadedImages]);
   const selectedImage = imageChoices.find((image) => image.id === selectedImageId) ?? defaultImagePresets[0];
 
@@ -28,6 +29,7 @@ export function App() {
 
   const startPuzzle = () => {
     setResult(null);
+    setPuzzleSessionId((sessionId) => sessionId + 1);
     setScreen("puzzle");
   };
 
@@ -89,13 +91,14 @@ export function App() {
 
       {screen === "puzzle" ? (
         <PuzzleScreen
+          key={`${selectedImage.id}-${puzzleSessionId}`}
           level={fixtureLevel}
           imageSrc={selectedImage.src}
           imageTitle={selectedImage.title}
           inputBlocked={settingsOpen || result !== null}
           onMenu={() => setScreen("menu")}
           onSettings={() => setSettingsOpen(true)}
-          onFixtureComplete={() => setResult(winResult)}
+          onFixtureComplete={setResult}
         />
       ) : null}
 

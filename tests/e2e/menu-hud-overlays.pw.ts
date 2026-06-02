@@ -24,6 +24,60 @@ test("first-load menu flow starts a puzzle and opens overlays", async ({ page },
   await expect(page.getByLabel("Reduced motion")).toBeVisible();
 });
 
+test("desktop solution reference enlarges on hover and opens fullscreen inspection", async ({ page, isMobile }) => {
+  test.skip(isMobile, "desktop hover-only assertion");
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Play" }).click();
+
+  const stage = page.getByTestId("puzzle-stage");
+  const thumb = page.getByTestId("solution-reference-thumb");
+  await expect(stage).toHaveAttribute("data-input-gated", "false");
+  await expect(thumb).toBeVisible();
+
+  await thumb.hover();
+  await expect
+    .poll(() =>
+      thumb.evaluate((element) => {
+        const transform = getComputedStyle(element).transform;
+        return transform === "none" ? 1 : new DOMMatrixReadOnly(transform).a;
+      }),
+    )
+    .toBeGreaterThan(1.1);
+
+  await thumb.click();
+  const dialog = page.getByRole("dialog", { name: "Solution Reference" });
+  await expect(dialog).toBeVisible();
+  await expect(page.getByRole("img", { name: /solution reference/i })).toBeVisible();
+  await expect(stage).toHaveAttribute("data-input-gated", "true");
+
+  const dialogBox = await dialog.boundingBox();
+  const viewport = page.viewportSize();
+  expect(dialogBox?.width).toBeGreaterThan((viewport?.width ?? 0) * 0.9);
+  expect(dialogBox?.height).toBeGreaterThan((viewport?.height ?? 0) * 0.9);
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(stage).toHaveAttribute("data-input-gated", "false");
+});
+
+test("mobile tap opens the solution reference fullscreen", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "mobile-only tap assertion");
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Play" }).click();
+
+  const stage = page.getByTestId("puzzle-stage");
+  await page.getByTestId("solution-reference-thumb").tap();
+
+  await expect(page.getByRole("dialog", { name: "Solution Reference" })).toBeVisible();
+  await expect(page.getByRole("img", { name: /solution reference/i })).toBeVisible();
+  await expect(stage).toHaveAttribute("data-input-gated", "true");
+
+  await page.getByRole("button", { name: "Close solution reference" }).click();
+  await expect(stage).toHaveAttribute("data-input-gated", "false");
+});
+
 test("mobile portrait keeps the puzzle center and lower-middle clear", async ({ page, isMobile }, testInfo) => {
   test.skip(!isMobile, "mobile-only layout assertion");
 
@@ -46,9 +100,12 @@ test("win screen exposes scoring and next action", async ({ page }) => {
   await page.getByRole("button", { name: "Play" }).click();
   await page.getByRole("button", { name: "Complete fixture level" }).click();
 
-  await expect(page.getByRole("dialog", { name: "Moon Gate Restored" })).toBeVisible();
-  await expect(page.getByText("Player ticks 24")).toBeVisible();
-  await expect(page.getByText("Optimal ticks 22")).toBeVisible();
+  const report = page.getByRole("dialog", { name: "Moon Gate Archive Restored" });
+  await expect(report).toBeVisible();
+  await expect(page.getByTestId("win-movements")).toContainText("Movements");
+  await expect(page.getByTestId("win-duration")).toContainText("Duration");
+  await expect(page.getByTestId("win-tick-cost")).toContainText("0 ticks");
+  await expect(page.getByTestId("win-best-score")).toContainText("Best score");
   await expect(page.getByRole("button", { name: "Next level" })).toBeVisible();
 });
 

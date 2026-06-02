@@ -5,11 +5,18 @@ import { IconButton } from "../components/IconButton";
 export type WinResult = {
   title: string;
   stars: 1 | 2 | 3;
+  moveCount: number;
   playerTickCost: number;
   optimalTickCost: number;
   elapsedTime: string;
+  elapsedMs: number;
   hintCount: number;
   difficultyScore: string;
+  bestScore: string;
+  bestMoveCount: number;
+  bestTickCost: number;
+  bestElapsedTime: string;
+  isPersonalBest: boolean;
 };
 
 type WinScreenProps = {
@@ -33,13 +40,39 @@ export function WinScreen({ result, onNext, onRetry, onMenu }: WinScreenProps) {
               <Star key={index} aria-hidden="true" size={20} fill="currentColor" />
             ))}
           </div>
-          <div className="result-grid">
-            <span>Player ticks {result.playerTickCost}</span>
-            <span>Optimal ticks {result.optimalTickCost}</span>
-            <span>Elapsed {result.elapsedTime}</span>
-            <span>Hints {result.hintCount}</span>
-            <span>{result.difficultyScore}</span>
-          </div>
+          <dl className="result-grid" aria-label="Completion report">
+            <div data-testid="win-movements">
+              <dt>Movements</dt>
+              <dd>{result.moveCount}</dd>
+            </div>
+            <div data-testid="win-duration">
+              <dt>Duration</dt>
+              <dd>{result.elapsedTime}</dd>
+            </div>
+            <div data-testid="win-tick-cost">
+              <dt>Tick cost</dt>
+              <dd>{result.playerTickCost === 1 ? "1 tick" : `${result.playerTickCost} ticks`}</dd>
+            </div>
+            <div>
+              <dt>Optimal ticks</dt>
+              <dd>{result.optimalTickCost}</dd>
+            </div>
+            <div>
+              <dt>Hints</dt>
+              <dd>{result.hintCount}</dd>
+            </div>
+            <div>
+              <dt>Difficulty</dt>
+              <dd>{result.difficultyScore}</dd>
+            </div>
+            <div data-testid="win-best-score" className="result-grid__best">
+              <dt>Best score</dt>
+              <dd>
+                <span>{result.bestScore}</span>
+                {result.isPersonalBest ? <span className="result-badge">New best</span> : null}
+              </dd>
+            </div>
+          </dl>
           <div className="win-actions">
             <IconButton icon={ArrowRight} label="Next level" text="Next level" variant="primary" onClick={onNext} />
             <IconButton icon={RotateCcw} label="Retry" text="Retry" onClick={onRetry} />

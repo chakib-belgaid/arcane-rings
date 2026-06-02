@@ -35,7 +35,7 @@ test("pointer drag previews affected rings before committing offsets", async ({ 
   await expect(host).not.toHaveAttribute("data-offsets", initialOffsets ?? "");
 });
 
-test("committed ring rotations settle through an animation phase", async ({ page }) => {
+test("committed ring rotations clear preview without restarting stale settle", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Play" }).click();
 
@@ -59,6 +59,7 @@ test("committed ring rotations settle through an animation phase", async ({ page
   await page.mouse.move(moveX, moveY);
   await page.mouse.up();
 
-  await expect(host).toHaveAttribute("data-animation-phase", "settling");
-  await expect(host).toHaveAttribute("data-animation-phase", "idle", { timeout: 1_500 });
+  await expect(host).toHaveAttribute("data-selected-ring", "");
+  await expect(host).toHaveAttribute("data-preview-ticks", "0");
+  await expect(host).toHaveAttribute("data-animation-phase", "idle");
 });

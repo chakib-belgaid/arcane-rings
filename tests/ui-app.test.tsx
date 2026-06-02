@@ -1,13 +1,32 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
+
+vi.mock("../src/render/PuzzleCanvas", () => ({
+  PuzzleCanvas: ({ inputDisabled, offsets, onCommit }: {
+    inputDisabled?: boolean;
+    offsets: number[];
+    onCommit?: (move: { controlRing: number; deltaTicks: number }) => void;
+  }) => (
+    <button
+      type="button"
+      data-testid="puzzle-canvas"
+      data-offsets={offsets.join(",")}
+      disabled={inputDisabled}
+      onClick={() => onCommit?.({ controlRing: 0, deltaTicks: 1 })}
+    >
+      Puzzle canvas
+    </button>
+  ),
+}));
 
 import { App } from "../src/App";
 import { WinScreen } from "../src/ui/screens/WinScreen";
 
 afterEach(() => {
   cleanup();
+  window.localStorage.clear();
 });
 
 describe("Project Circles menu and overlay UI", () => {
@@ -74,6 +93,60 @@ describe("Project Circles menu and overlay UI", () => {
     expect(within(dialog).getByRole("button", { name: "Reset progress" })).toBeTruthy();
   });
 
+  test("solution reference opens fullscreen and gates puzzle input", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    expect(screen.getByTestId("puzzle-stage").getAttribute("data-input-gated")).toBe("false");
+
+    await user.click(screen.getByRole("button", { name: "Open solution reference fullscreen" }));
+    expect(screen.getByRole("dialog", { name: "Solution Reference" })).toBeTruthy();
+    expect(screen.getByTestId("puzzle-stage").getAttribute("data-input-gated")).toBe("true");
+
+    await user.click(screen.getByRole("button", { name: "Close solution reference" }));
+    expect(screen.getByTestId("puzzle-stage").getAttribute("data-input-gated")).toBe("false");
+  });
+
+  test("completion report uses current session movements, duration, and best score", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    await user.click(screen.getByTestId("puzzle-canvas"));
+
+    expect(screen.getByText("Moves").nextElementSibling?.textContent).toBe("1");
+
+    await user.click(screen.getByRole("button", { name: "Complete fixture level" }));
+
+    const report = screen.getByRole("dialog", { name: "Moon Gate Archive Restored" });
+    expect(within(report).getByTestId("win-movements").textContent).toContain("Movements");
+    expect(within(report).getByTestId("win-movements").textContent).toContain("1");
+    expect(within(report).getByTestId("win-duration").textContent).toContain("Duration");
+    expect(within(report).getByTestId("win-duration").textContent).toContain("00:00");
+    expect(within(report).getByTestId("win-tick-cost").textContent).toContain("1 tick");
+    expect(within(report).getByText("1 move · 1 tick · 00:00")).toBeTruthy();
+  });
+
+  test("completion report keeps the durable best score after a worse retry", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    await user.click(screen.getByTestId("puzzle-canvas"));
+    await user.click(screen.getByRole("button", { name: "Complete fixture level" }));
+    expect(within(screen.getByTestId("win-best-score")).getByText("1 move · 1 tick · 00:00")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    await user.click(screen.getByTestId("puzzle-canvas"));
+    await user.click(screen.getByTestId("puzzle-canvas"));
+    await user.click(screen.getByRole("button", { name: "Complete fixture level" }));
+
+    expect(within(screen.getByTestId("win-movements")).getByText("2")).toBeTruthy();
+    expect(within(screen.getByTestId("win-tick-cost")).getByText("2 ticks")).toBeTruthy();
+    expect(within(screen.getByTestId("win-best-score")).getByText("1 move · 1 tick · 00:00")).toBeTruthy();
+  });
+
   test("image collection shell shows restored archive metadata", async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -119,11 +192,18 @@ describe("Win screen shell", () => {
         result={{
           title: "Moon Gate Restored",
           stars: 3,
+          moveCount: 9,
           playerTickCost: 24,
           optimalTickCost: 22,
           elapsedTime: "04:18",
+          elapsedMs: 258000,
           hintCount: 1,
           difficultyScore: "Medium · T22 · F6",
+          bestScore: "9 moves · 24 ticks · 04:18",
+          bestMoveCount: 9,
+          bestTickCost: 24,
+          bestElapsedTime: "04:18",
+          isPersonalBest: true,
         }}
         onNext={() => undefined}
         onRetry={() => undefined}
@@ -132,9 +212,13 @@ describe("Win screen shell", () => {
     );
 
     expect(screen.getByRole("dialog", { name: "Moon Gate Restored" })).toBeTruthy();
-    expect(screen.getByText("Player ticks 24")).toBeTruthy();
-    expect(screen.getByText("Optimal ticks 22")).toBeTruthy();
-    expect(screen.getByText("Hints 1")).toBeTruthy();
+    expect(screen.getByTestId("win-movements").textContent).toContain("9");
+    expect(screen.getByTestId("win-duration").textContent).toContain("04:18");
+    expect(screen.getByTestId("win-best-score").textContent).toContain("9 moves · 24 ticks · 04:18");
+    expect(screen.getByTestId("win-best-score").textContent).toContain("New best");
+    expect(screen.getByTestId("win-tick-cost").textContent).toContain("24 ticks");
+    expect(screen.getByText("Optimal ticks")).toBeTruthy();
+    expect(screen.getByText("Hints")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Next level" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
   });

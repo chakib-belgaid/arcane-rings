@@ -94,7 +94,11 @@ export function PuzzleCanvas({
   const imageRef = useRef<HTMLImageElement | null>(null);
   const dragRef = useRef<(PointerDragSession & { pointerId: number }) | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const settleRunRef = useRef(0);
+  const settleTimeoutRef = useRef<number | null>(null);
+  const canvasBackingRef = useRef({ height: 0, width: 0 });
   const displayOffsetsRef = useRef<number[]>([...offsets]);
+  const previewBaseOffsetsRef = useRef<number[] | null>(null);
   const drawOffsetsRef = useRef<(nextOffsets: number[]) => void>(() => undefined);
   const [imageReady, setImageReady] = useState(false);
   const [renderSize, setRenderSize] = useState(size);
@@ -111,12 +115,17 @@ export function PuzzleCanvas({
     () => computeAffectedRings(matrix, selectedRing, q),
     [matrix, q, selectedRing],
   );
-  const renderOffsets = useMemo(() => {
-    if (selectedRing === null || previewTicks === 0) {
-      return displayOffsetsRef.current;
-    }
-    return computePreviewOffsets(offsets, matrix, selectedRing, previewTicks, q);
-  }, [matrix, offsets, previewTicks, q, selectedRing]);
+  const previewOffsetsFor = useCallback(
+    (controlRing: number, ticks: number) =>
+      computePreviewOffsets(
+        previewBaseOffsetsRef.current ?? displayOffsetsRef.current,
+        matrix,
+        controlRing,
+        ticks,
+        q,
+      ),
+    [matrix, q],
+  );
 
   const drawOffsets = useCallback(
     (nextOffsets: number[]) => {
@@ -127,10 +136,22 @@ export function PuzzleCanvas({
       }
 
       const ratio = window.devicePixelRatio || 1;
-      canvas.width = Math.round(canvasSize * ratio);
-      canvas.height = Math.round(canvasSize * ratio);
-      canvas.style.width = "100%";
-      canvas.style.height = "100%";
+      const backingWidth = Math.round(canvasSize * ratio);
+      const backingHeight = Math.round(canvasSize * ratio);
+      if (canvasBackingRef.current.width !== backingWidth) {
+        canvas.width = backingWidth;
+        canvasBackingRef.current.width = backingWidth;
+      }
+      if (canvasBackingRef.current.height !== backingHeight) {
+        canvas.height = backingHeight;
+        canvasBackingRef.current.height = backingHeight;
+      }
+      if (canvas.style.width !== "100%") {
+        canvas.style.width = "100%";
+      }
+      if (canvas.style.height !== "100%") {
+        canvas.style.height = "100%";
+      }
 
       const context = canvas.getContext("2d");
       if (!context) {
@@ -160,9 +181,14 @@ export function PuzzleCanvas({
   }, [drawOffsets]);
 
   const stopSettlingFrame = useCallback(() => {
+    settleRunRef.current += 1;
     if (animationFrameRef.current !== null) {
       window.cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
+    }
+    if (settleTimeoutRef.current !== null) {
+      window.clearTimeout(settleTimeoutRef.current);
+      settleTimeoutRef.current = null;
     }
   }, []);
 
@@ -176,6 +202,18 @@ export function PuzzleCanvas({
 
     setAnimationPhase("idle");
   }, [stopSettlingFrame]);
+
+  const flashSettlingPhase = useCallback(() => {
+    if (settleTimeoutRef.current !== null) {
+      window.clearTimeout(settleTimeoutRef.current);
+    }
+
+    setAnimationPhase("settling");
+    settleTimeoutRef.current = window.setTimeout(() => {
+      settleTimeoutRef.current = null;
+      setAnimationPhase("idle");
+    }, SETTLE_ROTATION_MS);
+  }, []);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -223,20 +261,30 @@ export function PuzzleCanvas({
   }, [imageSrc]);
 
   useEffect(() => {
-    const activePreview = selectedRing !== null && previewTicks !== 0;
-    if (activePreview) {
-      drawOffsets(renderOffsets);
+    if (selectedRing !== null) {
+      drawOffsets(
+        previewTicks === 0
+          ? previewBaseOffsetsRef.current ?? displayOffsetsRef.current
+          : previewOffsetsFor(selectedRing, previewTicks),
+      );
       return;
     }
 
     if (animationPhase !== "settling") {
       drawOffsets(displayOffsetsRef.current);
     }
-  }, [animationPhase, drawOffsets, previewTicks, renderOffsets, selectedRing]);
+  }, [animationPhase, drawOffsets, previewOffsetsFor, previewTicks, selectedRing]);
 
   useEffect(() => {
     const targetOffsets = [...offsets];
+    if (selectedRing !== null) {
+      return;
+    }
+
     if (offsetsEqual(displayOffsetsRef.current, targetOffsets)) {
+      if (animationPhase === "settling") {
+        return;
+      }
       cancelSettlingAnimation();
       return;
     }
@@ -246,16 +294,19 @@ export function PuzzleCanvas({
       return;
     }
 
-    if (animationFrameRef.current !== null) {
-      window.cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
+    stopSettlingFrame();
 
     const startOffsets = [...displayOffsetsRef.current];
     const startTime = window.performance.now();
+    const runId = settleRunRef.current + 1;
+    settleRunRef.current = runId;
     setAnimationPhase("settling");
 
     const settle = (time: number) => {
+      if (runId !== settleRunRef.current) {
+        return;
+      }
+
       const progress = Math.min((time - startTime) / SETTLE_ROTATION_MS, 1);
       const nextOffsets = interpolateOffsets(startOffsets, targetOffsets, q, progress);
       displayOffsetsRef.current = nextOffsets;
@@ -266,6 +317,10 @@ export function PuzzleCanvas({
         return;
       }
 
+      if (runId !== settleRunRef.current) {
+        return;
+      }
+
       animationFrameRef.current = null;
       displayOffsetsRef.current = targetOffsets;
       drawOffsetsRef.current(targetOffsets);
@@ -273,7 +328,7 @@ export function PuzzleCanvas({
     };
 
     animationFrameRef.current = window.requestAnimationFrame(settle);
-  }, [cancelSettlingAnimation, offsets, q]);
+  }, [animationPhase, cancelSettlingAnimation, offsets, q, selectedRing, stopSettlingFrame]);
 
   useEffect(() => () => stopSettlingFrame(), [stopSettlingFrame]);
 
@@ -282,6 +337,10 @@ export function PuzzleCanvas({
       return;
     }
     dragRef.current = null;
+    if (previewBaseOffsetsRef.current) {
+      displayOffsetsRef.current = [...previewBaseOffsetsRef.current];
+      previewBaseOffsetsRef.current = null;
+    }
     setSelectedRing(null);
     setPreviewTicks(0);
     onCancel?.();
@@ -311,7 +370,8 @@ export function PuzzleCanvas({
       return;
     }
 
-    cancelSettlingAnimation(offsets);
+    cancelSettlingAnimation();
+    previewBaseOffsetsRef.current = [...displayOffsetsRef.current];
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { ...session, pointerId: event.pointerId };
@@ -332,12 +392,13 @@ export function PuzzleCanvas({
       cy: canvasSize / 2,
     });
     const affected = computeAffectedRings(matrix, session.controlRing, q);
+    const previewOffsets = previewOffsetsFor(session.controlRing, ticks);
     setPreviewTicks(ticks);
     onPreview?.({
       controlRing: session.controlRing,
       deltaTicks: ticks,
       affectedRings: affected,
-      previewOffsets: computePreviewOffsets(offsets, matrix, session.controlRing, ticks, q),
+      previewOffsets,
     });
   };
 
@@ -348,11 +409,17 @@ export function PuzzleCanvas({
     }
 
     const committedMove = finishPointerDrag(session);
+    const previewBaseOffsets = previewBaseOffsetsRef.current ?? displayOffsetsRef.current;
     dragRef.current = null;
+    displayOffsetsRef.current = committedMove
+      ? computePreviewOffsets(previewBaseOffsets, matrix, session.controlRing, committedMove.deltaTicks, q)
+      : [...previewBaseOffsets];
+    previewBaseOffsetsRef.current = null;
     setSelectedRing(null);
     setPreviewTicks(0);
 
     if (committedMove) {
+      flashSettlingPhase();
       onCommit?.(committedMove);
     } else {
       onCancel?.();
