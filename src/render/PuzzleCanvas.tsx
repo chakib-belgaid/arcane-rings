@@ -53,16 +53,19 @@ export function PuzzleCanvas({
   onCommit,
   onCancel,
 }: PuzzleCanvasProps) {
+  const hostRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const dragRef = useRef<(PointerDragSession & { pointerId: number }) | null>(null);
   const [imageReady, setImageReady] = useState(false);
+  const [renderSize, setRenderSize] = useState(size);
   const [selectedRing, setSelectedRing] = useState<number | null>(null);
   const [previewTicks, setPreviewTicks] = useState(0);
+  const canvasSize = Math.max(1, renderSize);
 
   const resolvedRadii = useMemo(
-    () => ringRadii ?? balancedRingRadii(size * 0.452, offsets.length),
-    [offsets.length, ringRadii, size],
+    () => ringRadii ?? balancedRingRadii(canvasSize * 0.452, offsets.length),
+    [canvasSize, offsets.length, ringRadii],
   );
   const affectedRings = useMemo(
     () => computeAffectedRings(matrix, selectedRing, q),
@@ -74,6 +77,32 @@ export function PuzzleCanvas({
     }
     return computePreviewOffsets(offsets, matrix, selectedRing, previewTicks, q);
   }, [matrix, offsets, previewTicks, q, selectedRing]);
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) {
+      return;
+    }
+
+    const updateSize = () => {
+      const bounds = host.getBoundingClientRect();
+      const nextSize = Math.round(Math.min(bounds.width, bounds.height || bounds.width));
+      if (nextSize > 0) {
+        setRenderSize(nextSize);
+      }
+    };
+
+    updateSize();
+
+    if (typeof window.ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateSize);
+      return () => window.removeEventListener("resize", updateSize);
+    }
+
+    const observer = new window.ResizeObserver(updateSize);
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, [size]);
 
   useEffect(() => {
     const image = new window.Image();
@@ -102,10 +131,10 @@ export function PuzzleCanvas({
     }
 
     const ratio = window.devicePixelRatio || 1;
-    canvas.width = Math.round(size * ratio);
-    canvas.height = Math.round(size * ratio);
-    canvas.style.width = `${size}px`;
-    canvas.style.height = `${size}px`;
+    canvas.width = Math.round(canvasSize * ratio);
+    canvas.height = Math.round(canvasSize * ratio);
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
 
     const context = canvas.getContext("2d");
     if (!context) {
@@ -116,8 +145,8 @@ export function PuzzleCanvas({
     context.scale(ratio, ratio);
     drawPuzzleRings(context, {
       image,
-      width: size,
-      height: size,
+      width: canvasSize,
+      height: canvasSize,
       ringRadii: resolvedRadii,
       offsets: renderOffsets,
       q,
@@ -126,7 +155,7 @@ export function PuzzleCanvas({
       previewTicks,
     });
     context.restore();
-  }, [affectedRings, imageReady, previewTicks, q, renderOffsets, resolvedRadii, selectedRing, size]);
+  }, [affectedRings, canvasSize, imageReady, previewTicks, q, renderOffsets, resolvedRadii, selectedRing]);
 
   const cancelDrag = useCallback(() => {
     if (!dragRef.current) {
@@ -152,8 +181,8 @@ export function PuzzleCanvas({
     const point = eventPoint(event.nativeEvent, canvasRef.current);
     const session = beginPointerDrag({
       ...point,
-      cx: size / 2,
-      cy: size / 2,
+      cx: canvasSize / 2,
+      cy: canvasSize / 2,
       ringRadii: resolvedRadii,
       q,
     });
@@ -178,8 +207,8 @@ export function PuzzleCanvas({
     const point = eventPoint(event.nativeEvent, canvasRef.current);
     const ticks = updatePointerDrag(session, {
       ...point,
-      cx: size / 2,
-      cy: size / 2,
+      cx: canvasSize / 2,
+      cy: canvasSize / 2,
     });
     const affected = computeAffectedRings(matrix, session.controlRing, q);
     setPreviewTicks(ticks);
@@ -211,6 +240,7 @@ export function PuzzleCanvas({
 
   return (
     <div
+      ref={hostRef}
       className="puzzle-canvas-host"
       data-testid="puzzle-canvas-host"
       data-selected-ring={selectedRing ?? ""}
