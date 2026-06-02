@@ -8,6 +8,7 @@ import {
   findRingFromPoint,
   updatePointerDrag,
   unwrapAngleDelta,
+  type PointerDragSession,
 } from "../../src/interaction/pointerDrag";
 
 describe("pointer drag helpers", () => {
@@ -50,6 +51,31 @@ describe("pointer drag helpers", () => {
       controlRing: 1,
       deltaTicks: 2,
     });
+  });
+
+  test("drag lifecycle tracks sub-tick preview motion without committing it", () => {
+    const q = 8;
+    const radii = [0, 40, 80, 120];
+    const session = beginPointerDrag({
+      px: 140,
+      py: 100,
+      cx: 100,
+      cy: 100,
+      ringRadii: radii,
+      q,
+    });
+    const deltaAngle = ((2 * Math.PI) / q) * 0.4;
+
+    expect(
+      updatePointerDrag(session!, {
+        px: 100 + Math.cos(deltaAngle) * 40,
+        py: 100 + Math.sin(deltaAngle) * 40,
+        cx: 100,
+        cy: 100,
+      }),
+    ).toBe(0);
+    expect((session as PointerDragSession & { previewDeltaTicks?: number })?.previewDeltaTicks).toBeCloseTo(0.4);
+    expect(finishPointerDrag(session!)).toBeNull();
   });
 
   test("computeAffectedRings returns rows influenced by the selected control column", () => {

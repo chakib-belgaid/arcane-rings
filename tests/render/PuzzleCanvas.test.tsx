@@ -167,4 +167,54 @@ describe("PuzzleCanvas", () => {
     expect(drawPuzzleRingsMock.mock.calls.length).toBeGreaterThan(drawCountBeforePointerDown);
     expect(latestDrawnOffsets()[0]).toBe(settlingOffsets[0]);
   });
+
+  test("drag preview redraws with fractional offsets before a full tick is reached", async () => {
+    const matrix = [
+      [1, 0],
+      [0, 1],
+    ];
+
+    const { getByTestId } = render(
+      <PuzzleCanvas imageSrc="test.png" offsets={[0, 0]} matrix={matrix} q={8} ringRadii={[0, 70, 140]} />,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const host = getByTestId("puzzle-canvas-host");
+    const canvas = getByTestId("puzzle-canvas");
+    vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      width: 280,
+      height: 280,
+      top: 0,
+      right: 280,
+      bottom: 280,
+      left: 0,
+      toJSON: () => undefined,
+    });
+
+    const center = 210;
+    const radius = 80;
+    const startAngle = -Math.PI / 2;
+    const deltaAngle = ((2 * Math.PI) / 8) * 0.4;
+
+    await act(async () => {
+      fireEvent.pointerDown(canvas, {
+        pointerId: 1,
+        clientX: center + Math.cos(startAngle) * radius,
+        clientY: center + Math.sin(startAngle) * radius,
+      });
+      fireEvent.pointerMove(canvas, {
+        pointerId: 1,
+        clientX: center + Math.cos(startAngle + deltaAngle) * radius,
+        clientY: center + Math.sin(startAngle + deltaAngle) * radius,
+      });
+    });
+
+    expect(host.getAttribute("data-preview-ticks")).toBe("0");
+    expect(latestDrawnOffsets()[1]).toBeCloseTo(0.4);
+  });
 });

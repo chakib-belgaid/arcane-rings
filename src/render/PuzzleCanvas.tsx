@@ -18,6 +18,7 @@ export type PuzzleCanvasCommit = {
 export type PuzzleCanvasPreview = PuzzleCanvasCommit & {
   affectedRings: number[];
   previewOffsets: number[];
+  previewDeltaTicks: number;
 };
 
 export type PuzzleCanvasProps = {
@@ -104,6 +105,7 @@ export function PuzzleCanvas({
   const [renderSize, setRenderSize] = useState(size);
   const [selectedRing, setSelectedRing] = useState<number | null>(null);
   const [previewTicks, setPreviewTicks] = useState(0);
+  const [previewDeltaTicks, setPreviewDeltaTicks] = useState(0);
   const [animationPhase, setAnimationPhase] = useState<AnimationPhase>("idle");
   const canvasSize = Math.max(1, renderSize);
 
@@ -169,11 +171,11 @@ export function PuzzleCanvas({
         q,
         selectedRing,
         affectedRings,
-        previewTicks,
+        previewTicks: previewDeltaTicks,
       });
       context.restore();
     },
-    [affectedRings, canvasSize, imageReady, previewTicks, q, resolvedRadii, selectedRing],
+    [affectedRings, canvasSize, imageReady, previewDeltaTicks, q, resolvedRadii, selectedRing],
   );
 
   useEffect(() => {
@@ -263,9 +265,9 @@ export function PuzzleCanvas({
   useEffect(() => {
     if (selectedRing !== null) {
       drawOffsets(
-        previewTicks === 0
+        previewDeltaTicks === 0
           ? previewBaseOffsetsRef.current ?? displayOffsetsRef.current
-          : previewOffsetsFor(selectedRing, previewTicks),
+          : previewOffsetsFor(selectedRing, previewDeltaTicks),
       );
       return;
     }
@@ -273,7 +275,7 @@ export function PuzzleCanvas({
     if (animationPhase !== "settling") {
       drawOffsets(displayOffsetsRef.current);
     }
-  }, [animationPhase, drawOffsets, previewOffsetsFor, previewTicks, selectedRing]);
+  }, [animationPhase, drawOffsets, previewDeltaTicks, previewOffsetsFor, selectedRing]);
 
   useEffect(() => {
     const targetOffsets = [...offsets];
@@ -343,6 +345,7 @@ export function PuzzleCanvas({
     }
     setSelectedRing(null);
     setPreviewTicks(0);
+    setPreviewDeltaTicks(0);
     onCancel?.();
   }, [onCancel]);
 
@@ -377,6 +380,7 @@ export function PuzzleCanvas({
     dragRef.current = { ...session, pointerId: event.pointerId };
     setSelectedRing(session.controlRing);
     setPreviewTicks(0);
+    setPreviewDeltaTicks(0);
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -391,14 +395,17 @@ export function PuzzleCanvas({
       cx: canvasSize / 2,
       cy: canvasSize / 2,
     });
+    const visualTicks = session.previewDeltaTicks;
     const affected = computeAffectedRings(matrix, session.controlRing, q);
-    const previewOffsets = previewOffsetsFor(session.controlRing, ticks);
+    const previewOffsets = previewOffsetsFor(session.controlRing, visualTicks);
     setPreviewTicks(ticks);
+    setPreviewDeltaTicks(visualTicks);
     onPreview?.({
       controlRing: session.controlRing,
       deltaTicks: ticks,
       affectedRings: affected,
       previewOffsets,
+      previewDeltaTicks: visualTicks,
     });
   };
 
@@ -417,6 +424,7 @@ export function PuzzleCanvas({
     previewBaseOffsetsRef.current = null;
     setSelectedRing(null);
     setPreviewTicks(0);
+    setPreviewDeltaTicks(0);
 
     if (committedMove) {
       flashSettlingPhase();
@@ -433,6 +441,7 @@ export function PuzzleCanvas({
       data-testid="puzzle-canvas-host"
       data-selected-ring={selectedRing ?? ""}
       data-preview-ticks={previewTicks}
+      data-preview-delta-ticks={previewDeltaTicks}
       data-affected-rings={affectedRings.join(",")}
       data-offsets={offsets.join(",")}
       data-animation-phase={animationPhase}

@@ -3,6 +3,7 @@ export type PointerDragSession = {
   startAngle: number;
   q: number;
   previewTicks: number;
+  previewDeltaTicks: number;
 };
 
 export type PointerPoint = {
@@ -53,8 +54,12 @@ export function unwrapAngleDelta(startAngle: number, currentAngle: number): numb
 }
 
 export function angleDeltaToTicks(deltaAngle: number, q: number): number {
+  return Math.round(angleDeltaToPreviewTicks(deltaAngle, q));
+}
+
+export function angleDeltaToPreviewTicks(deltaAngle: number, q: number): number {
   const tickAngle = (2 * Math.PI) / q;
-  return Math.round(deltaAngle / tickAngle);
+  return deltaAngle / tickAngle;
 }
 
 export function beginPointerDrag(input: BeginPointerDragInput): PointerDragSession | null {
@@ -75,13 +80,15 @@ export function beginPointerDrag(input: BeginPointerDragInput): PointerDragSessi
     startAngle: angleOfPoint(input.px, input.py, input.cx, input.cy),
     q: input.q,
     previewTicks: 0,
+    previewDeltaTicks: 0,
   };
 }
 
 export function updatePointerDrag(session: PointerDragSession, point: PointerPoint): number {
   const currentAngle = angleOfPoint(point.px, point.py, point.cx, point.cy);
   const deltaAngle = unwrapAngleDelta(session.startAngle, currentAngle);
-  session.previewTicks = angleDeltaToTicks(deltaAngle, session.q);
+  session.previewDeltaTicks = angleDeltaToPreviewTicks(deltaAngle, session.q);
+  session.previewTicks = Math.round(session.previewDeltaTicks);
   return session.previewTicks;
 }
 
