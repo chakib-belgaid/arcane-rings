@@ -15,6 +15,8 @@ type SourceDimensions = {
   height: number;
 };
 
+const DIMMED_RING_OVERLAY = "rgba(4, 8, 11, 0.34)";
+
 const AFFECTED_RING_GLOW = {
   fill: "rgba(224, 173, 86, 0.14)",
   lineWidth: 4.6,
@@ -159,6 +161,17 @@ export function drawPuzzleRings(
     context.rotate(rotation);
     context.drawImage(image, cropX, cropY, cropSide, cropSide, -radius, -radius, radius * 2, radius * 2);
     context.restore();
+  }
+
+  if (selectedRing !== null) {
+    const highlightedRings = new Set([selectedRing, ...affectedRings]);
+    for (let ring = 0; ring < ringRadii.length - 1; ring += 1) {
+      if (highlightedRings.has(ring)) {
+        continue;
+      }
+
+      fillAnnulus(context, cx, cy, ringRadii[ring], ringRadii[ring + 1], DIMMED_RING_OVERLAY);
+    }
   }
 
   for (let ring = 0; ring < ringRadii.length - 1; ring += 1) {

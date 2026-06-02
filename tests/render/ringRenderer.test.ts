@@ -68,4 +68,29 @@ describe("drawPuzzleRings", () => {
     expect(shadowBlurs).toContain(24);
     expect(shadowBlurs).toContain(17);
   });
+
+  test("dims unrelated rings between selected and non-adjacent affected rings", () => {
+    const { context, operations } = makeRecordingContext();
+    const image = { naturalWidth: 128, naturalHeight: 128 } as CanvasImageSource;
+
+    drawPuzzleRings(context, {
+      image,
+      width: 240,
+      height: 240,
+      ringRadii: [0, 40, 80, 120],
+      offsets: [0, 0, 0],
+      q: 8,
+      selectedRing: 0,
+      affectedRings: [0, 2],
+      previewTicks: 1,
+    });
+
+    const fillStyles = operations
+      .filter((operation) => isSetOperation(operation, "fillStyle"))
+      .map((operation) => operation.value);
+
+    expect(fillStyles.filter((value) => value === "rgba(4, 8, 11, 0.34)")).toHaveLength(1);
+    expect(fillStyles).toContain("rgba(224, 173, 86, 0.14)");
+    expect(fillStyles).toContain("rgba(224, 173, 86, 0.2)");
+  });
 });
