@@ -33,6 +33,42 @@ export type PuzzleCanvasProps = {
   onCancel?: () => void;
 };
 
+type AnimationPhase = "idle" | "settling";
+
+const SETTLE_ROTATION_MS = 220;
+
+function offsetsEqual(left: number[], right: number[]): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  return left.every((offset, index) => offset === right[index]);
+}
+
+function modTick(value: number, q: number): number {
+  return ((value % q) + q) % q;
+}
+
+function shortestTickDelta(from: number, to: number, q: number): number {
+  const forward = modTick(to - from, q);
+  return forward > q / 2 ? forward - q : forward;
+}
+
+function easeOutQuint(progress: number): number {
+  return 1 - Math.pow(1 - progress, 5);
+}
+
+function interpolateOffsets(from: number[], to: number[], q: number, progress: number): number[] {
+  const eased = easeOutQuint(Math.max(0, Math.min(1, progress)));
+  return to.map((target, ring) => {
+    const start = from[ring] ?? target;
+    return start + shortestTickDelta(start, target, q) * eased;
+  });
+}
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+
 function eventPoint(event: PointerEvent, canvas: HTMLCanvasElement): { px: number; py: number } {
   const bounds = canvas.getBoundingClientRect();
   return {
@@ -57,10 +93,14 @@ export function PuzzleCanvas({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const dragRef = useRef<(PointerDragSession & { pointerId: number }) | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const displayOffsetsRef = useRef<number[]>([...offsets]);
+  const drawOffsetsRef = useRef<(nextOffsets: number[]) => void>(() => undefined);
   const [imageReady, setImageReady] = useState(false);
   const [renderSize, setRenderSize] = useState(size);
   const [selectedRing, setSelectedRing] = useState<number | null>(null);
   const [previewTicks, setPreviewTicks] = useState(0);
+  const [animationPhase, setAnimationPhase] = useState<AnimationPhase>("idle");
   const canvasSize = Math.max(1, renderSize);
 
   const resolvedRadii = useMemo(
@@ -73,10 +113,69 @@ export function PuzzleCanvas({
   );
   const renderOffsets = useMemo(() => {
     if (selectedRing === null || previewTicks === 0) {
-      return offsets;
+      return displayOffsetsRef.current;
     }
     return computePreviewOffsets(offsets, matrix, selectedRing, previewTicks, q);
   }, [matrix, offsets, previewTicks, q, selectedRing]);
+
+  const drawOffsets = useCallback(
+    (nextOffsets: number[]) => {
+      const canvas = canvasRef.current;
+      const image = imageRef.current;
+      if (!canvas || !imageReady || !image) {
+        return;
+      }
+
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.round(canvasSize * ratio);
+      canvas.height = Math.round(canvasSize * ratio);
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        return;
+      }
+
+      context.save();
+      context.scale(ratio, ratio);
+      drawPuzzleRings(context, {
+        image,
+        width: canvasSize,
+        height: canvasSize,
+        ringRadii: resolvedRadii,
+        offsets: nextOffsets,
+        q,
+        selectedRing,
+        affectedRings,
+        previewTicks,
+      });
+      context.restore();
+    },
+    [affectedRings, canvasSize, imageReady, previewTicks, q, resolvedRadii, selectedRing],
+  );
+
+  useEffect(() => {
+    drawOffsetsRef.current = drawOffsets;
+  }, [drawOffsets]);
+
+  const stopSettlingFrame = useCallback(() => {
+    if (animationFrameRef.current !== null) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }, []);
+
+  const cancelSettlingAnimation = useCallback((nextOffsets?: number[]) => {
+    stopSettlingFrame();
+
+    if (nextOffsets) {
+      displayOffsetsRef.current = [...nextOffsets];
+      drawOffsetsRef.current(displayOffsetsRef.current);
+    }
+
+    setAnimationPhase("idle");
+  }, [stopSettlingFrame]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -124,38 +223,59 @@ export function PuzzleCanvas({
   }, [imageSrc]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const image = imageRef.current;
-    if (!canvas || !imageReady || !image) {
+    const activePreview = selectedRing !== null && previewTicks !== 0;
+    if (activePreview) {
+      drawOffsets(renderOffsets);
       return;
     }
 
-    const ratio = window.devicePixelRatio || 1;
-    canvas.width = Math.round(canvasSize * ratio);
-    canvas.height = Math.round(canvasSize * ratio);
-    canvas.style.width = "100%";
-    canvas.style.height = "100%";
+    if (animationPhase !== "settling") {
+      drawOffsets(displayOffsetsRef.current);
+    }
+  }, [animationPhase, drawOffsets, previewTicks, renderOffsets, selectedRing]);
 
-    const context = canvas.getContext("2d");
-    if (!context) {
+  useEffect(() => {
+    const targetOffsets = [...offsets];
+    if (offsetsEqual(displayOffsetsRef.current, targetOffsets)) {
+      cancelSettlingAnimation();
       return;
     }
 
-    context.save();
-    context.scale(ratio, ratio);
-    drawPuzzleRings(context, {
-      image,
-      width: canvasSize,
-      height: canvasSize,
-      ringRadii: resolvedRadii,
-      offsets: renderOffsets,
-      q,
-      selectedRing,
-      affectedRings,
-      previewTicks,
-    });
-    context.restore();
-  }, [affectedRings, canvasSize, imageReady, previewTicks, q, renderOffsets, resolvedRadii, selectedRing]);
+    if (prefersReducedMotion()) {
+      cancelSettlingAnimation(targetOffsets);
+      return;
+    }
+
+    if (animationFrameRef.current !== null) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    const startOffsets = [...displayOffsetsRef.current];
+    const startTime = window.performance.now();
+    setAnimationPhase("settling");
+
+    const settle = (time: number) => {
+      const progress = Math.min((time - startTime) / SETTLE_ROTATION_MS, 1);
+      const nextOffsets = interpolateOffsets(startOffsets, targetOffsets, q, progress);
+      displayOffsetsRef.current = nextOffsets;
+      drawOffsetsRef.current(nextOffsets);
+
+      if (progress < 1) {
+        animationFrameRef.current = window.requestAnimationFrame(settle);
+        return;
+      }
+
+      animationFrameRef.current = null;
+      displayOffsetsRef.current = targetOffsets;
+      drawOffsetsRef.current(targetOffsets);
+      setAnimationPhase("idle");
+    };
+
+    animationFrameRef.current = window.requestAnimationFrame(settle);
+  }, [cancelSettlingAnimation, offsets, q]);
+
+  useEffect(() => () => stopSettlingFrame(), [stopSettlingFrame]);
 
   const cancelDrag = useCallback(() => {
     if (!dragRef.current) {
@@ -191,6 +311,7 @@ export function PuzzleCanvas({
       return;
     }
 
+    cancelSettlingAnimation(offsets);
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { ...session, pointerId: event.pointerId };
@@ -247,6 +368,7 @@ export function PuzzleCanvas({
       data-preview-ticks={previewTicks}
       data-affected-rings={affectedRings.join(",")}
       data-offsets={offsets.join(",")}
+      data-animation-phase={animationPhase}
     >
       <canvas
         ref={canvasRef}
