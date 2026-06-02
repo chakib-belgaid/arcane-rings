@@ -1,0 +1,9 @@
+{
+  "name": "Project Circles Acceptance Fixture",
+  "short_name": "Circles",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#10131d",
+  "theme_color": "#10131d",
+  "icons": []
+}

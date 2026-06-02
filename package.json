@@ -9,7 +9,9 @@
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "playwright": "playwright test"
+    "playwright": "playwright test",
+    "fixture:dev": "vite tests/fixtures/project-circles --host 127.0.0.1 --port 4175",
+    "playwright:fixture": "PROJECT_CIRCLES_FIXTURE=1 playwright test"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
