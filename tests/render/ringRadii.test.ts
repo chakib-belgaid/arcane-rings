@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { balancedRingRadii, equalRingRadii } from "../../src/render/ringRadii";
 
 describe("ring radii helpers", () => {

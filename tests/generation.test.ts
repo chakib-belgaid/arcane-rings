@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { matMulMod, matVecMod } from "../src/math/matrix";
 import { modNorm } from "../src/math/mod";
 import { scoreDifficulty, withinDifficultyBounds } from "../src/math/difficulty";

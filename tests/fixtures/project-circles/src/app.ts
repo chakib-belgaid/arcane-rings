@@ -37,8 +37,9 @@ type DragState = {
   startAngle: number;
 };
 
-const app = document.querySelector<HTMLDivElement>("#app");
-if (!app) throw new Error("Missing app root");
+const appRoot = document.querySelector<HTMLDivElement>("#app");
+if (!appRoot) throw new Error("Missing app root");
+const app: HTMLDivElement = appRoot;
 
 const SEEDED_LEVEL: Level = {
   id: "seeded-acceptance",
