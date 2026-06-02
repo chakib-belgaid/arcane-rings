@@ -1,0 +1,19 @@
+{
+  "name": "project-circles-core-game",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "seedrandom": "^3.0.5"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.4",
+    "@types/seedrandom": "^3.0.8",
+    "fast-check": "^3.23.2",
+    "typescript": "^5.8.3"
+  }
+}
