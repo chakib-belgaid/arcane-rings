@@ -1,0 +1,14 @@
+{
+  "name": "project-circles-playwright-harness",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fixture:dev": "vite tests/fixtures/project-circles --host 127.0.0.1 --port 4175",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0",
+    "vite": "^5.4.0",
+    "typescript": "^5.5.0"
+  }
+}

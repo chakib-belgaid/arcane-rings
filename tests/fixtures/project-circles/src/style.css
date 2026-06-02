@@ -1,0 +1,265 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  color: #edf4ff;
+  background: #10131d;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(115, 146, 191, 0.16), transparent 34%),
+    linear-gradient(145deg, #10131d 0%, #17192a 52%, #10131d 100%);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  min-height: 42px;
+  border: 1px solid rgba(218, 228, 244, 0.26);
+  border-radius: 8px;
+  color: #f6f8ff;
+  background: rgba(33, 39, 60, 0.84);
+  cursor: pointer;
+}
+
+button:hover {
+  background: rgba(55, 64, 94, 0.95);
+}
+
+.menu {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 32px;
+}
+
+.menu-panel {
+  display: grid;
+  width: min(420px, 100%);
+  gap: 14px;
+  padding: 28px;
+  border: 1px solid rgba(218, 228, 244, 0.16);
+  border-radius: 8px;
+  background: rgba(16, 19, 29, 0.72);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+}
+
+.menu h1 {
+  margin: 0 0 12px;
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.seed-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.seed-form input {
+  min-height: 42px;
+  border: 1px solid rgba(218, 228, 244, 0.22);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #edf4ff;
+  background: rgba(9, 12, 20, 0.8);
+}
+
+.game {
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  overflow: hidden;
+}
+
+.playfield {
+  display: grid;
+  min-height: calc(100vh - 36px);
+  place-items: center;
+}
+
+.ring-canvas {
+  width: min(68vw, 68vh, 640px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  touch-action: none;
+  filter: drop-shadow(0 28px 48px rgba(0, 0, 0, 0.45));
+}
+
+.hud,
+.side-actions,
+.status-strip,
+.hint-panel {
+  position: absolute;
+  z-index: 2;
+  border: 1px solid rgba(218, 228, 244, 0.16);
+  border-radius: 8px;
+  background: rgba(16, 19, 29, 0.78);
+  backdrop-filter: blur(10px);
+}
+
+.hud {
+  top: 18px;
+  left: 18px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+}
+
+.hud span {
+  min-width: 42px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.side-actions {
+  top: 18px;
+  right: 18px;
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+}
+
+.side-actions button,
+.hud button {
+  min-width: 88px;
+}
+
+.status-strip {
+  left: 18px;
+  bottom: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  max-width: min(620px, calc(100vw - 36px));
+  gap: 12px;
+  padding: 8px 10px;
+  color: #cdd8ee;
+  font-size: 13px;
+}
+
+.status-strip span {
+  white-space: nowrap;
+}
+
+.hint-panel {
+  right: 18px;
+  bottom: 18px;
+  max-width: 280px;
+  padding: 10px 12px;
+  color: #ffe2a6;
+}
+
+.drawer-backdrop,
+.win-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(4, 7, 14, 0.58);
+}
+
+.drawer,
+.win {
+  width: min(460px, 100%);
+  border: 1px solid rgba(218, 228, 244, 0.22);
+  border-radius: 8px;
+  padding: 22px;
+  background: rgba(17, 22, 34, 0.96);
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.52);
+}
+
+.drawer h2,
+.win h2 {
+  margin: 0 0 14px;
+  font-size: 24px;
+  letter-spacing: 0;
+}
+
+.drawer ul,
+.win dl {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 0;
+}
+
+.drawer li {
+  list-style: none;
+  color: #dce7fa;
+}
+
+.win dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.win dt,
+.win dd {
+  margin: 0;
+}
+
+.win dd {
+  color: #ffe2a6;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .game {
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+
+  .ring-canvas {
+    width: min(88vw, 62vh);
+  }
+
+  .hud {
+    top: 12px;
+    left: 12px;
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .hud button,
+  .side-actions button {
+    min-width: 68px;
+    min-height: 36px;
+    font-size: 13px;
+  }
+
+  .side-actions {
+    top: 12px;
+    right: 12px;
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .status-strip {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  .hint-panel {
+    right: 12px;
+    bottom: 82px;
+    max-width: calc(100vw - 24px);
+  }
+}
