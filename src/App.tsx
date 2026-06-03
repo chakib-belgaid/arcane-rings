@@ -98,7 +98,7 @@ export function App() {
           inputBlocked={settingsOpen || result !== null}
           onMenu={() => setScreen("menu")}
           onSettings={() => setSettingsOpen(true)}
-          onFixtureComplete={setResult}
+          onComplete={setResult}
         />
       ) : null}
 

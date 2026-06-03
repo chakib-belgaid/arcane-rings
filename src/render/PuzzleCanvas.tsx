@@ -444,12 +444,16 @@ export function PuzzleCanvas({
       data-preview-delta-ticks={previewDeltaTicks}
       data-affected-rings={affectedRings.join(",")}
       data-offsets={offsets.join(",")}
+      data-ring-count={offsets.length}
+      data-ticks={q}
       data-animation-phase={animationPhase}
     >
       <canvas
         ref={canvasRef}
         className="puzzle-canvas"
         data-testid="puzzle-canvas"
+        data-ring-count={offsets.length}
+        data-ticks={q}
         aria-label="Project Circles puzzle canvas"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

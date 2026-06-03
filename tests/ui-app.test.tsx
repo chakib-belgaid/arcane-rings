@@ -4,25 +4,70 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 
 vi.mock("../src/render/PuzzleCanvas", () => ({
-  PuzzleCanvas: ({ inputDisabled, offsets, onCommit }: {
+  PuzzleCanvas: ({
+    inputDisabled,
+    offsets,
+    onCommit,
+  }: {
     inputDisabled?: boolean;
     offsets: number[];
     onCommit?: (move: { controlRing: number; deltaTicks: number }) => void;
   }) => (
-    <button
-      type="button"
-      data-testid="puzzle-canvas"
-      data-offsets={offsets.join(",")}
-      disabled={inputDisabled}
-      onClick={() => onCommit?.({ controlRing: 0, deltaTicks: 1 })}
-    >
-      Puzzle canvas
-    </button>
+    <div>
+      <button
+        type="button"
+        data-testid="puzzle-canvas"
+        data-offsets={offsets.join(",")}
+        disabled={inputDisabled}
+        onClick={() => onCommit?.({ controlRing: 0, deltaTicks: 1 })}
+      >
+        Puzzle canvas
+      </button>
+      <button
+        type="button"
+        data-testid="commit-ring-1-plus1"
+        disabled={inputDisabled}
+        onClick={() => onCommit?.({ controlRing: 0, deltaTicks: 1 })}
+      >
+        Ring 1 +1
+      </button>
+      <button
+        type="button"
+        data-testid="commit-ring-2-minus2"
+        disabled={inputDisabled}
+        onClick={() => onCommit?.({ controlRing: 1, deltaTicks: -2 })}
+      >
+        Ring 2 -2
+      </button>
+      <button
+        type="button"
+        data-testid="commit-ring-3-minus3"
+        disabled={inputDisabled}
+        onClick={() => onCommit?.({ controlRing: 2, deltaTicks: -3 })}
+      >
+        Ring 3 -3
+      </button>
+      <button
+        type="button"
+        data-testid="commit-ring-4-plus1"
+        disabled={inputDisabled}
+        onClick={() => onCommit?.({ controlRing: 3, deltaTicks: 1 })}
+      >
+        Ring 4 +1
+      </button>
+    </div>
   ),
 }));
 
 import { App } from "../src/App";
 import { WinScreen } from "../src/ui/screens/WinScreen";
+
+async function solveFixtureLevel(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  await user.click(screen.getByTestId("commit-ring-1-plus1"));
+  await user.click(screen.getByTestId("commit-ring-2-minus2"));
+  await user.click(screen.getByTestId("commit-ring-3-minus3"));
+  await user.click(screen.getByTestId("commit-ring-4-plus1"));
+}
 
 afterEach(() => {
   cleanup();
@@ -64,6 +109,7 @@ describe("Project Circles menu and overlay UI", () => {
     expect(screen.getByTestId("puzzle-stage").getAttribute("data-input-gated")).toBe("false");
     expect(screen.getByTestId("puzzle-hud").classList.contains("hud--compact")).toBe(true);
     expect(screen.queryByTestId("normal-play-center-overlay")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Complete fixture level" })).toBeNull();
 
     const couplingButton = screen.getByRole("button", { name: "Open coupling map" });
     await user.click(couplingButton);
@@ -108,24 +154,23 @@ describe("Project Circles menu and overlay UI", () => {
     expect(screen.getByTestId("puzzle-stage").getAttribute("data-input-gated")).toBe("false");
   });
 
-  test("completion report uses current session movements, duration, and best score", async () => {
+  test("completion report appears after solving the current scramble", async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await user.click(screen.getByRole("button", { name: "Play" }));
-    await user.click(screen.getByTestId("puzzle-canvas"));
+    expect(screen.getByTestId("puzzle-canvas").getAttribute("data-offsets")).toBe("11,0,4,3,2");
 
-    expect(screen.getByText("Moves").nextElementSibling?.textContent).toBe("1");
+    await solveFixtureLevel(user);
 
-    await user.click(screen.getByRole("button", { name: "Complete fixture level" }));
-
-    const report = screen.getByRole("dialog", { name: "Moon Gate Archive Restored" });
+    const report = await screen.findByRole("dialog", { name: "Moon Gate Archive Restored" });
     expect(within(report).getByTestId("win-movements").textContent).toContain("Movements");
-    expect(within(report).getByTestId("win-movements").textContent).toContain("1");
+    expect(within(report).getByTestId("win-movements").textContent).toContain("4");
     expect(within(report).getByTestId("win-duration").textContent).toContain("Duration");
     expect(within(report).getByTestId("win-duration").textContent).toContain("00:00");
-    expect(within(report).getByTestId("win-tick-cost").textContent).toContain("1 tick");
-    expect(within(report).getByText("1 move · 1 tick · 00:00")).toBeTruthy();
+    expect(within(report).getByTestId("win-tick-cost").textContent).toContain("7 ticks");
+    expect(within(report).getByText("4 moves · 7 ticks · 00:00")).toBeTruthy();
+    expect(within(report).getByText("Optimal ticks").nextElementSibling?.textContent).toBe("7");
   });
 
   test("completion report keeps the durable best score after a worse retry", async () => {
@@ -133,18 +178,33 @@ describe("Project Circles menu and overlay UI", () => {
     render(<App />);
 
     await user.click(screen.getByRole("button", { name: "Play" }));
-    await user.click(screen.getByTestId("puzzle-canvas"));
-    await user.click(screen.getByRole("button", { name: "Complete fixture level" }));
-    expect(within(screen.getByTestId("win-best-score")).getByText("1 move · 1 tick · 00:00")).toBeTruthy();
+    await solveFixtureLevel(user);
+    expect(within(screen.getByTestId("win-best-score")).getByText("4 moves · 7 ticks · 00:00")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Retry" }));
     await user.click(screen.getByTestId("puzzle-canvas"));
-    await user.click(screen.getByTestId("puzzle-canvas"));
-    await user.click(screen.getByRole("button", { name: "Complete fixture level" }));
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    await solveFixtureLevel(user);
 
-    expect(within(screen.getByTestId("win-movements")).getByText("2")).toBeTruthy();
-    expect(within(screen.getByTestId("win-tick-cost")).getByText("2 ticks")).toBeTruthy();
-    expect(within(screen.getByTestId("win-best-score")).getByText("1 move · 1 tick · 00:00")).toBeTruthy();
+    expect(within(screen.getByTestId("win-movements")).getByText("4")).toBeTruthy();
+    expect(within(screen.getByTestId("win-tick-cost")).getByText("8 ticks")).toBeTruthy();
+    expect(within(screen.getByTestId("win-best-score")).getByText("4 moves · 7 ticks · 00:00")).toBeTruthy();
+  });
+
+  test("hint button advances through contextual layers", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Play" }));
+
+    await user.click(screen.getByRole("button", { name: "Hint" }));
+    expect(screen.getByTestId("hint-panel").textContent).toBe("Focus Ring 3");
+
+    await user.click(screen.getByRole("button", { name: "Hint" }));
+    expect(screen.getByTestId("hint-panel").textContent).toBe("Ring 3 still needs adjustment");
+
+    await user.click(screen.getByRole("button", { name: "Hint" }));
+    expect(screen.getByTestId("hint-panel").textContent).toBe("Ring 3 counterclockwise 3 ticks");
   });
 
   test("image collection shell shows restored archive metadata", async () => {

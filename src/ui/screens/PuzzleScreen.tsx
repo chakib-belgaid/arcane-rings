@@ -6,8 +6,10 @@ import { IconButton } from "../components/IconButton";
 import { ModalShell } from "../components/ModalShell";
 import { PuzzleHud } from "../hud/PuzzleHud";
 import { PuzzleLevelFixture } from "../types";
-import { modNorm } from "../../interaction/pointerDrag";
 import { PuzzleCanvas, type PuzzleCanvasCommit } from "../../render/PuzzleCanvas";
+import { applyPlayerMove, computeStars, createRuntimeState, selectHint, undoLastMove } from "../../state/gameState";
+import type { Hint } from "../../state/types";
+import { cyclicDistance, modNorm } from "../../math/mod";
 import type { WinResult } from "./WinScreen";
 
 type PuzzleScreenProps = {
@@ -17,7 +19,7 @@ type PuzzleScreenProps = {
   inputBlocked: boolean;
   onMenu: () => void;
   onSettings: () => void;
-  onFixtureComplete: (result: WinResult) => void;
+  onComplete: (result: WinResult) => void;
 };
 
 type BestScore = {
@@ -90,6 +92,32 @@ function formatBestScore(score: BestScore): string {
   return `${formatCount(score.moveCount, "move")} · ${formatCount(score.tickCost, "tick")} · ${formatDuration(score.elapsedMs)}`;
 }
 
+function normalizedVector(values: number[], length: number, q: number): number[] {
+  return Array.from({ length }, (_, index) => modNorm(values[index] ?? 0, q));
+}
+
+function solutionTickCost(solution: number[], q: number): number {
+  return solution.reduce((total, ticks) => total + cyclicDistance(ticks, q), 0);
+}
+
+function formatHintText(hint: Hint, hintLayer: number): string {
+  if (!hint) {
+    return "All rings are aligned";
+  }
+
+  const ringLabel = `Ring ${hint.ring + 1}`;
+  if (hintLayer === 1) {
+    return `Focus ${ringLabel}`;
+  }
+  if (hintLayer === 2) {
+    return `${ringLabel} still needs adjustment`;
+  }
+
+  const direction = hint.signedTicks < 0 ? "counterclockwise" : "clockwise";
+  const ticks = Math.abs(hint.signedTicks);
+  return `${ringLabel} ${direction} ${ticks} ${ticks === 1 ? "tick" : "ticks"}`;
+}
+
 export function PuzzleScreen({
   level,
   imageSrc,
@@ -97,21 +125,26 @@ export function PuzzleScreen({
   inputBlocked,
   onMenu,
   onSettings,
-  onFixtureComplete,
+  onComplete,
 }: PuzzleScreenProps) {
   const [couplingOpen, setCouplingOpen] = useState(false);
   const [solutionOpen, setSolutionOpen] = useState(false);
   const [hintLayer, setHintLayer] = useState(0);
   const [referenceVisible, setReferenceVisible] = useState(level.showReferenceThumbnail);
-  const [offsets, setOffsets] = useState(() => Array.from({ length: level.rings }, () => 0));
-  const [moveCount, setMoveCount] = useState(0);
-  const [playerTickCost, setPlayerTickCost] = useState(0);
   const [hintCount, setHintCount] = useState(0);
   const [completedAtMs, setCompletedAtMs] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const startedAt = useMemo(() => Date.now(), []);
+  const initialOffsets = useMemo(
+    () => normalizedVector(level.initialOffsets, level.rings, level.ticks),
+    [level.initialOffsets, level.rings, level.ticks],
+  );
+  const solution = useMemo(
+    () => normalizedVector(level.solution, level.rings, level.ticks),
+    [level.rings, level.solution, level.ticks],
+  );
+  const [runtimeState, setRuntimeState] = useState(() => createRuntimeState(initialOffsets, startedAt));
   const elapsedTime = formatDuration(completedAtMs ?? elapsedMs);
-  const inputGated = couplingOpen || solutionOpen || inputBlocked || completedAtMs !== null;
   const matrix = useMemo(() => {
     const generated: number[][] = Array.from({ length: level.rings }, (_, row) =>
       Array.from({ length: level.rings }, (_, column) => (row === column ? 1 : 0))
@@ -128,6 +161,17 @@ export function PuzzleScreen({
     return generated;
   }, [level.edges, level.rings]);
   const storageKey = useMemo(() => bestScoreKey(level.id, imageTitle), [imageTitle, level.id]);
+  const optimalTickCost = useMemo(
+    () => level.moves || solutionTickCost(level.solution, level.ticks),
+    [level.moves, level.solution, level.ticks],
+  );
+  const hint = useMemo(
+    () => selectHint(solution, runtimeState.accumulatedMoves, level.ticks),
+    [level.ticks, runtimeState.accumulatedMoves, solution],
+  );
+  const moveCount = runtimeState.moveHistory.length;
+  const playerTickCost = runtimeState.totalTickMoves;
+  const inputGated = couplingOpen || solutionOpen || inputBlocked || completedAtMs !== null || runtimeState.isSolved;
 
   useEffect(() => {
     if (completedAtMs !== null) {
@@ -140,21 +184,30 @@ export function PuzzleScreen({
     return () => window.clearInterval(intervalId);
   }, [completedAtMs, startedAt]);
 
-  const handleCommit = ({ controlRing, deltaTicks }: PuzzleCanvasCommit) => {
+  const handleCommit = useCallback(({ controlRing, deltaTicks }: PuzzleCanvasCommit) => {
+    if (inputGated) {
+      return;
+    }
     if (deltaTicks === 0) {
       return;
     }
 
-    setMoveCount((current) => current + 1);
-    setPlayerTickCost((current) => current + Math.abs(deltaTicks));
-    setOffsets((currentOffsets) =>
-      currentOffsets.map((offset, ring) =>
-        modNorm(offset + (matrix[ring]?.[controlRing] ?? 0) * deltaTicks, level.ticks)
-      )
-    );
-  };
+    setRuntimeState((current) => applyPlayerMove(current, matrix, controlRing, deltaTicks, level.ticks, Date.now()));
+  }, [inputGated, level.ticks, matrix]);
 
-  const handleHint = () => {
+  const handleUndo = useCallback(() => {
+    if (inputGated) {
+      return;
+    }
+
+    setRuntimeState((current) => undoLastMove(current, matrix, level.ticks));
+  }, [inputGated, level.ticks, matrix]);
+
+  const handleHint = useCallback(() => {
+    if (inputGated || !hint) {
+      return;
+    }
+
     setHintLayer((layer) => {
       const nextLayer = Math.min(layer + 1, 3);
       if (nextLayer !== layer) {
@@ -162,10 +215,14 @@ export function PuzzleScreen({
       }
       return nextLayer;
     });
-  };
+  }, [hint, inputGated]);
 
-  const handleFixtureComplete = useCallback(() => {
-    const finalElapsedMs = completedAtMs ?? Date.now() - startedAt;
+  const handleComplete = useCallback(() => {
+    if (completedAtMs !== null) {
+      return;
+    }
+
+    const finalElapsedMs = runtimeState.solvedAt === null ? Date.now() - startedAt : runtimeState.solvedAt - startedAt;
     const currentScore = { moveCount, tickCost: playerTickCost, elapsedMs: finalElapsedMs };
     const { best, isPersonalBest } = chooseBestScore(currentScore, readBestScore(storageKey));
 
@@ -174,12 +231,12 @@ export function PuzzleScreen({
     }
 
     setCompletedAtMs(finalElapsedMs);
-    onFixtureComplete({
+    onComplete({
       title: `${imageTitle} Restored`,
-      stars: moveCount <= level.moves ? 3 : moveCount <= level.moves * 1.5 ? 2 : 1,
+      stars: computeStars(optimalTickCost, playerTickCost),
       moveCount,
       playerTickCost,
-      optimalTickCost: level.moves,
+      optimalTickCost,
       elapsedTime: formatDuration(finalElapsedMs),
       elapsedMs: finalElapsedMs,
       hintCount,
@@ -195,15 +252,45 @@ export function PuzzleScreen({
     hintCount,
     imageTitle,
     level.difficulty,
-    level.moves,
     level.rings,
     level.ticks,
     moveCount,
-    onFixtureComplete,
+    onComplete,
+    optimalTickCost,
     playerTickCost,
+    runtimeState.solvedAt,
     startedAt,
     storageKey,
   ]);
+
+  useEffect(() => {
+    if (runtimeState.isSolved && completedAtMs === null) {
+      handleComplete();
+    }
+  }, [completedAtMs, handleComplete, runtimeState.isSolved]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+      if (key === "z") {
+        event.preventDefault();
+        handleUndo();
+      }
+      if (key === "h") {
+        event.preventDefault();
+        handleHint();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleHint, handleUndo]);
+
+  const hintText = hintLayer > 0 ? formatHintText(hint, hintLayer) : null;
 
   return (
     <main
@@ -217,7 +304,7 @@ export function PuzzleScreen({
         <div className="puzzle-visual" data-testid="puzzle-visual">
           <PuzzleCanvas
             imageSrc={imageSrc}
-            offsets={offsets}
+            offsets={runtimeState.currentOffsets}
             matrix={matrix}
             q={level.ticks}
             inputDisabled={inputGated}
@@ -236,18 +323,19 @@ export function PuzzleScreen({
             <img src={imageSrc} alt="" />
           </button>
         ) : null}
-        {hintLayer > 0 ? <div className="hint-toast">Ring 3 still needs adjustment</div> : null}
+        {hintText ? <div className="hint-toast" data-testid="hint-panel">{hintText}</div> : null}
       </section>
       <PuzzleHud
         level={level}
         moveCount={moveCount}
         elapsedTime={elapsedTime}
-        onUndo={() => undefined}
+        canUndo={runtimeState.moveHistory.length > 0}
+        controlsDisabled={inputGated}
+        onUndo={handleUndo}
         onHint={handleHint}
         onToggleReference={() => setReferenceVisible((visible) => !visible)}
         onCouplingMap={() => setCouplingOpen(true)}
         onSettings={onSettings}
-        onFixtureComplete={handleFixtureComplete}
       />
       {couplingOpen ? <CouplingMapDialog edges={level.edges} onClose={() => setCouplingOpen(false)} /> : null}
       {solutionOpen ? (

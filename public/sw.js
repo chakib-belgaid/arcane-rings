@@ -1,4 +1,4 @@
-const CACHE_NAME = "project-circles-shell-v1";
+const CACHE_NAME = "project-circles-shell-v2";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon.svg"];
 
 self.addEventListener("install", (event) => {
@@ -22,10 +22,40 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).catch(() => caches.match("/"));
-    })
-  );
+  if (isNavigationRequest(event.request)) {
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  event.respondWith(cacheFirst(event.request));
 });
+
+function isNavigationRequest(request) {
+  return request.mode === "navigate" || request.headers.get("accept")?.includes("text/html");
+}
+
+async function networkFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      await cache.put("/", response.clone());
+    }
+    return response;
+  } catch {
+    return (await cache.match(request)) || (await cache.match("/"));
+  }
+}
+
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+
+  const response = await fetch(request);
+  if (response.ok && new URL(request.url).origin === self.location.origin) {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(request, response.clone());
+  }
+  return response;
+}

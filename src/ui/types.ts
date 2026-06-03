@@ -35,6 +35,8 @@ export type PuzzleLevelFixture = {
   rings: number;
   ticks: number;
   moves: number;
+  initialOffsets: number[];
+  solution: number[];
   showReferenceThumbnail: boolean;
   showCouplingHints: boolean;
   edges: CouplingEdge[];
