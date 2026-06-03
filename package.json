@@ -1,0 +1,40 @@
+{
+  "name": "project-circles",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "playwright": "playwright test",
+    "fixture:dev": "vite tests/fixtures/project-circles --host 127.0.0.1 --port 4175",
+    "playwright:fixture": "PROJECT_CIRCLES_FIXTURE=1 playwright test"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "seedrandom": "^3.0.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^15.0.7",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/bun": "^1.3.4",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@types/seedrandom": "^3.0.8",
+    "@vitejs/plugin-react": "^4.5.0",
+    "fast-check": "^3.23.2",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.8.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}
