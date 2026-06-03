@@ -47,7 +47,7 @@ Run the main verification commands:
 
 ```sh
 /opt/homebrew/bin/bun run typecheck
-/opt/homebrew/bin/bun test
+/opt/homebrew/bin/bun run test
 /opt/homebrew/bin/bun run build
 /opt/homebrew/bin/bun run playwright
 ```

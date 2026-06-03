@@ -23,6 +23,6 @@ Use Bun for this worktree:
 ```sh
 /opt/homebrew/bin/bun install
 /opt/homebrew/bin/bun run typecheck
-/opt/homebrew/bin/bun test
-/opt/homebrew/bin/bunx playwright test
+/opt/homebrew/bin/bun run test
+/opt/homebrew/bin/bun run playwright
 ```

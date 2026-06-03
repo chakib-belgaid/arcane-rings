@@ -15,6 +15,9 @@ type PuzzleScreenProps = {
   imageSrc: string;
   imageTitle: string;
   inputBlocked: boolean;
+  referenceDefault: boolean;
+  colorblindCoupling: boolean;
+  fixtureControlsEnabled: boolean;
   onMenu: () => void;
   onSettings: () => void;
   onFixtureComplete: (result: WinResult) => void;
@@ -25,6 +28,17 @@ type BestScore = {
   tickCost: number;
   elapsedMs: number;
 };
+
+type MoveHistoryEntry = {
+  offsets: number[];
+  tickCost: number;
+};
+
+const hintMessages = [
+  "Focus on the ring that shifts the most neighbors.",
+  "Ring 3 still needs adjustment.",
+  "Try ring 3 counterclockwise by 3 ticks.",
+];
 
 function formatDuration(milliseconds: number): string {
   const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
@@ -95,6 +109,9 @@ export function PuzzleScreen({
   imageSrc,
   imageTitle,
   inputBlocked,
+  referenceDefault,
+  colorblindCoupling,
+  fixtureControlsEnabled,
   onMenu,
   onSettings,
   onFixtureComplete,
@@ -102,8 +119,9 @@ export function PuzzleScreen({
   const [couplingOpen, setCouplingOpen] = useState(false);
   const [solutionOpen, setSolutionOpen] = useState(false);
   const [hintLayer, setHintLayer] = useState(0);
-  const [referenceVisible, setReferenceVisible] = useState(level.showReferenceThumbnail);
+  const [referenceVisible, setReferenceVisible] = useState(level.showReferenceThumbnail && referenceDefault);
   const [offsets, setOffsets] = useState(() => Array.from({ length: level.rings }, () => 0));
+  const [moveHistory, setMoveHistory] = useState<MoveHistoryEntry[]>([]);
   const [moveCount, setMoveCount] = useState(0);
   const [playerTickCost, setPlayerTickCost] = useState(0);
   const [hintCount, setHintCount] = useState(0);
@@ -112,6 +130,8 @@ export function PuzzleScreen({
   const startedAt = useMemo(() => Date.now(), []);
   const elapsedTime = formatDuration(completedAtMs ?? elapsedMs);
   const inputGated = couplingOpen || solutionOpen || inputBlocked || completedAtMs !== null;
+  const hintExhausted = hintLayer >= hintMessages.length;
+  const currentHint = hintLayer > 0 ? hintMessages[hintLayer - 1] : null;
   const matrix = useMemo(() => {
     const generated: number[][] = Array.from({ length: level.rings }, (_, row) =>
       Array.from({ length: level.rings }, (_, column) => (row === column ? 1 : 0))
@@ -145,6 +165,7 @@ export function PuzzleScreen({
       return;
     }
 
+    setMoveHistory((history) => [...history, { offsets: [...offsets], tickCost: Math.abs(deltaTicks) }]);
     setMoveCount((current) => current + 1);
     setPlayerTickCost((current) => current + Math.abs(deltaTicks));
     setOffsets((currentOffsets) =>
@@ -156,12 +177,24 @@ export function PuzzleScreen({
 
   const handleHint = () => {
     setHintLayer((layer) => {
-      const nextLayer = Math.min(layer + 1, 3);
+      const nextLayer = Math.min(layer + 1, hintMessages.length);
       if (nextLayer !== layer) {
         setHintCount((count) => count + 1);
       }
       return nextLayer;
     });
+  };
+
+  const handleUndo = () => {
+    const lastMove = moveHistory.at(-1);
+    if (!lastMove) {
+      return;
+    }
+
+    setOffsets([...lastMove.offsets]);
+    setMoveCount((current) => Math.max(0, current - 1));
+    setPlayerTickCost((current) => Math.max(0, current - lastMove.tickCost));
+    setMoveHistory((history) => history.slice(0, -1));
   };
 
   const handleFixtureComplete = useCallback(() => {
@@ -236,20 +269,34 @@ export function PuzzleScreen({
             <img src={imageSrc} alt="" />
           </button>
         ) : null}
-        {hintLayer > 0 ? <div className="hint-toast">Ring 3 still needs adjustment</div> : null}
+        {currentHint ? (
+          <div className="hint-toast" role="status" aria-live="polite">
+            {currentHint}
+          </div>
+        ) : null}
       </section>
       <PuzzleHud
         level={level}
         moveCount={moveCount}
         elapsedTime={elapsedTime}
-        onUndo={() => undefined}
+        onUndo={handleUndo}
+        undoDisabled={moveHistory.length === 0 || inputGated}
         onHint={handleHint}
+        hintDisabled={hintExhausted || inputGated}
         onToggleReference={() => setReferenceVisible((visible) => !visible)}
+        referenceVisible={referenceVisible}
         onCouplingMap={() => setCouplingOpen(true)}
         onSettings={onSettings}
         onFixtureComplete={handleFixtureComplete}
+        fixtureControlsEnabled={fixtureControlsEnabled}
       />
-      {couplingOpen ? <CouplingMapDialog edges={level.edges} onClose={() => setCouplingOpen(false)} /> : null}
+      {couplingOpen ? (
+        <CouplingMapDialog
+          colorblindCoupling={colorblindCoupling}
+          edges={level.edges}
+          onClose={() => setCouplingOpen(false)}
+        />
+      ) : null}
       {solutionOpen ? (
         <ModalShell
           title="Solution Reference"

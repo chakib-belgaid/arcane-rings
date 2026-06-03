@@ -5,24 +5,76 @@ import { IconButton } from "../components/IconButton";
 import { ModalShell } from "../components/ModalShell";
 
 type SettingsOverlayProps = {
+  settings: AppSettings;
+  onSettingsChange: (settings: AppSettings) => void;
+  onResetProgress: () => void;
   onClose: () => void;
   variant: "menu" | "puzzle";
 };
 
-export function SettingsOverlay({ onClose, variant }: SettingsOverlayProps) {
+export type AppSettings = {
+  reducedMotion: boolean;
+  soundEffects: boolean;
+  haptics: boolean;
+  referenceDefault: boolean;
+  highContrastBorders: boolean;
+  colorblindCoupling: boolean;
+};
+
+export const defaultAppSettings: AppSettings = {
+  reducedMotion: false,
+  soundEffects: true,
+  haptics: true,
+  referenceDefault: true,
+  highContrastBorders: false,
+  colorblindCoupling: true,
+};
+
+export function SettingsOverlay({
+  settings,
+  onSettingsChange,
+  onResetProgress,
+  onClose,
+  variant,
+}: SettingsOverlayProps) {
   const id = useId();
-  const [settings, setSettings] = useState({
-    reducedMotion: false,
-    soundEffects: true,
-    music: false,
-    haptics: true,
-    referenceDefault: true,
-    highContrastBorders: false,
-    colorblindCoupling: true,
-  });
+  const [status, setStatus] = useState("");
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const setBoolean = (key: keyof typeof settings) => (value: boolean) => {
-    setSettings((current) => ({ ...current, [key]: value }));
+    onSettingsChange({ ...settings, [key]: value });
+    setConfirmReset(false);
+  };
+
+  const previewSound = () => {
+    setConfirmReset(false);
+    setStatus(settings.soundEffects ? "Sound preview played" : "Sound effects are off");
+  };
+
+  const previewHaptics = () => {
+    setConfirmReset(false);
+    if (settings.haptics) {
+      window.navigator.vibrate?.(20);
+    }
+    setStatus(settings.haptics ? "Haptic preview sent" : "Haptic feedback is off");
+  };
+
+  const restoreDefaults = () => {
+    onSettingsChange(defaultAppSettings);
+    setConfirmReset(false);
+    setStatus("Defaults restored");
+  };
+
+  const resetProgress = () => {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      setStatus("Press confirm reset to clear progress");
+      return;
+    }
+
+    onResetProgress();
+    setConfirmReset(false);
+    setStatus("Progress reset");
   };
 
   return (
@@ -40,7 +92,6 @@ export function SettingsOverlay({ onClose, variant }: SettingsOverlayProps) {
           checked={settings.soundEffects}
           onChange={setBoolean("soundEffects")}
         />
-        <Toggle id={`${id}-music`} label="Music" checked={settings.music} onChange={setBoolean("music")} />
         <Toggle
           id={`${id}-haptics`}
           label="Haptic feedback"
@@ -66,11 +117,20 @@ export function SettingsOverlay({ onClose, variant }: SettingsOverlayProps) {
           onChange={setBoolean("colorblindCoupling")}
         />
       </div>
+      <p className="settings-status" role="status" aria-live="polite">
+        {status}
+      </p>
       <footer className="settings-actions">
-        <IconButton icon={Volume2} label="Preview sound effects" />
-        <IconButton icon={Waves} label="Preview haptic feedback" />
-        <IconButton icon={RotateCcw} label="Restore defaults" />
-        <IconButton icon={Trash2} label="Reset progress" text="Reset progress" variant="danger" />
+        <IconButton icon={Volume2} label="Preview sound effects" onClick={previewSound} />
+        <IconButton icon={Waves} label="Preview haptic feedback" onClick={previewHaptics} />
+        <IconButton icon={RotateCcw} label="Restore defaults" onClick={restoreDefaults} />
+        <IconButton
+          icon={Trash2}
+          label={confirmReset ? "Confirm reset" : "Reset progress"}
+          text={confirmReset ? "Confirm reset" : "Reset progress"}
+          variant="danger"
+          onClick={resetProgress}
+        />
       </footer>
     </ModalShell>
   );
@@ -85,9 +145,14 @@ type ToggleProps = {
 
 function Toggle({ id, label, checked, onChange }: ToggleProps) {
   return (
-    <label className="toggle-row" htmlFor={id}>
+    <label className="toggle-row" data-checked={checked ? "true" : "false"} htmlFor={id}>
       <span>{label}</span>
-      <input id={id} type="checkbox" checked={checked} onChange={(event) => onChange(event.currentTarget.checked)} />
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.currentTarget.checked)}
+      />
     </label>
   );
 }

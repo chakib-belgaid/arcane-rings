@@ -8,11 +8,15 @@ type PuzzleHudProps = {
   moveCount: number;
   elapsedTime: string;
   onUndo: () => void;
+  undoDisabled: boolean;
   onHint: () => void;
+  hintDisabled: boolean;
   onToggleReference: () => void;
+  referenceVisible: boolean;
   onCouplingMap: () => void;
   onSettings: () => void;
   onFixtureComplete: () => void;
+  fixtureControlsEnabled: boolean;
 };
 
 export function PuzzleHud({
@@ -20,11 +24,15 @@ export function PuzzleHud({
   moveCount,
   elapsedTime,
   onUndo,
+  undoDisabled,
   onHint,
+  hintDisabled,
   onToggleReference,
+  referenceVisible,
   onCouplingMap,
   onSettings,
   onFixtureComplete,
+  fixtureControlsEnabled,
 }: PuzzleHudProps) {
   return (
     <aside className="hud hud--compact" data-testid="puzzle-hud" aria-label="Puzzle controls">
@@ -37,12 +45,19 @@ export function PuzzleHud({
         <strong>{elapsedTime}</strong>
       </div>
       <div className="hud-cluster">
-        <IconButton icon={Undo2} label="Undo" onClick={onUndo} />
-        <IconButton icon={Lightbulb} label="Hint" onClick={onHint} />
-        <IconButton icon={Eye} label="Toggle reference thumbnail" onClick={onToggleReference} />
+        <IconButton icon={Undo2} label="Undo" onClick={onUndo} disabled={undoDisabled} />
+        <IconButton icon={Lightbulb} label="Hint" onClick={onHint} disabled={hintDisabled} />
+        <IconButton
+          icon={Eye}
+          label="Toggle reference thumbnail"
+          onClick={onToggleReference}
+          aria-pressed={referenceVisible}
+        />
         {level.showCouplingHints ? <IconButton icon={Map} label="Open coupling map" onClick={onCouplingMap} /> : null}
         <IconButton icon={Settings} label="Open settings" onClick={onSettings} />
-        <IconButton icon={Trophy} label="Complete fixture level" onClick={onFixtureComplete} />
+        {fixtureControlsEnabled ? (
+          <IconButton icon={Trophy} label="Complete fixture level" onClick={onFixtureComplete} />
+        ) : null}
       </div>
       <div className="hud-chip">
         <span>{level.difficulty}</span>
