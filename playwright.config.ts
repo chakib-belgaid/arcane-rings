@@ -20,8 +20,8 @@ export default defineConfig({
   },
   webServer: {
     command: fixtureMode
-      ? "/opt/homebrew/bin/bun run fixture:dev"
-      : "/opt/homebrew/bin/bun run build && /opt/homebrew/bin/bunx vite preview --host 127.0.0.1 --port 4173",
+      ? "bun run fixture:dev"
+      : "bun run build && bunx vite preview --host 127.0.0.1 --port 4173",
     url: fixtureMode ? fixtureBaseURL : appBaseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000

@@ -9,11 +9,9 @@ import { AppSettings, defaultAppSettings, SettingsOverlay } from "./ui/screens/S
 import { WinScreen, WinResult } from "./ui/screens/WinScreen";
 import { defaultImagePresets, fixtureLevel } from "./ui/fixtureData";
 import { DifficultyName, PuzzleImageSource } from "./ui/types";
+import { BEST_SCORE_STORAGE_PREFIXES_TO_CLEAR, SETTINGS_STORAGE_KEY } from "./persistence/storageKeys";
 
 type AppScreen = "menu" | "difficulty" | "levels" | "collection" | "puzzle";
-
-const SETTINGS_STORAGE_KEY = "project-circles:settings";
-const BEST_SCORE_PREFIX = "project-circles:best-score:";
 
 function readStoredSettings(): AppSettings {
   try {
@@ -127,7 +125,7 @@ export function App() {
   const resetProgress = () => {
     try {
       for (const key of Object.keys(window.localStorage)) {
-        if (key.startsWith(BEST_SCORE_PREFIX)) {
+        if (BEST_SCORE_STORAGE_PREFIXES_TO_CLEAR.some((prefix) => key.startsWith(prefix))) {
           window.localStorage.removeItem(key);
         }
       }

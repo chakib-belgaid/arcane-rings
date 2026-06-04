@@ -180,6 +180,25 @@ describe("Arcane Rings menu and overlay UI", () => {
     expect((within(reopened).getByLabelText("Volume") as HTMLInputElement).value).toBe("70");
   });
 
+  test("reset progress clears current and legacy best-score keys", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem("arcane-rings:best-score:fixture-level-01:Moon Gate Archive", "{}");
+    window.localStorage.setItem("project-circles:best-score:fixture-level-01:Moon Gate Archive", "{}");
+    window.localStorage.setItem("project-circles:settings", JSON.stringify({ volume: 0.7 }));
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    const dialog = screen.getByRole("dialog", { name: "Settings" });
+
+    await user.click(within(dialog).getByRole("button", { name: "Reset progress" }));
+    await user.click(within(dialog).getByRole("button", { name: "Confirm reset" }));
+
+    expect(window.localStorage.getItem("arcane-rings:best-score:fixture-level-01:Moon Gate Archive")).toBeNull();
+    expect(window.localStorage.getItem("project-circles:best-score:fixture-level-01:Moon Gate Archive")).toBeNull();
+    expect(window.localStorage.getItem("project-circles:settings")).not.toBeNull();
+    expect(within(dialog).getByRole("status").textContent).toContain("Progress reset");
+  });
+
   test("solution reference opens fullscreen and gates puzzle input", async () => {
     const user = userEvent.setup();
     render(<App />);

@@ -11,6 +11,7 @@ import { applyPlayerMove, computeStars, createRuntimeState, selectHint, undoLast
 import type { Hint } from "../../state/types";
 import { cyclicDistance, modNorm } from "../../math/mod";
 import { gameAudio } from "../../audio/gameAudio";
+import { bestScoreStorageKey } from "../../persistence/storageKeys";
 import type { WinResult } from "./WinScreen";
 
 type PuzzleScreenProps = {
@@ -36,10 +37,6 @@ function formatDuration(milliseconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-}
-
-function bestScoreKey(levelId: string, imageTitle: string): string {
-  return `arcane-rings:best-score:${levelId}:${imageTitle}`;
 }
 
 function readBestScore(key: string): BestScore | null {
@@ -165,7 +162,7 @@ export function PuzzleScreen({
 
     return generated;
   }, [level.edges, level.rings]);
-  const storageKey = useMemo(() => bestScoreKey(level.id, imageTitle), [imageTitle, level.id]);
+  const storageKey = useMemo(() => bestScoreStorageKey(level.id, imageTitle), [imageTitle, level.id]);
   const optimalTickCost = useMemo(
     () => level.moves || solutionTickCost(level.solution, level.ticks),
     [level.moves, level.solution, level.ticks]
