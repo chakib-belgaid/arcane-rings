@@ -40,7 +40,7 @@ test("pointer drag previews affected rings before committing a rotation", async 
 
   await finishPreviewDrag(page);
   await expect(page.getByTestId("offsets")).not.toHaveText(beforeOffsets ?? "");
-  await expect(page.getByTestId("move-count")).toHaveText("1");
+  await expect(page.getByTestId("preview-ticks")).toHaveText("0");
 });
 
 test("undo restores the previous visual state without adding player cost", async ({ page }) => {
@@ -48,12 +48,11 @@ test("undo restores the previous visual state without adding player cost", async
 
   const initialOffsets = await page.getByTestId("offsets").textContent();
   await dragRing(page, { ringIndex: 1, ticks: 2 });
-  await expect(page.getByTestId("move-count")).toHaveText("2");
   await expect(page.getByTestId("offsets")).not.toHaveText(initialOffsets ?? "");
 
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(page.getByTestId("offsets")).toHaveText(initialOffsets ?? "");
-  await expect(page.getByTestId("move-count")).toHaveText("0");
+  await expect(page.getByTestId("preview-ticks")).toHaveText("0");
 });
 
 test("hint button advances through light, medium, and strong layers", async ({ page }) => {

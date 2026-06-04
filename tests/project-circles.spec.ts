@@ -10,7 +10,7 @@ test("launches the Enchanted Grove menu and starts the seeded puzzle", async ({ 
   await page.getByRole("button", { name: "Play" }).click();
 
   await expect(page.getByLabel("Puzzle playfield")).toBeVisible();
-  await expect(page.getByText("Moves")).toBeVisible();
+  await expect(page.locator(".moves-plaque")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Open coupling map" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Map", exact: true })).toHaveCount(0);

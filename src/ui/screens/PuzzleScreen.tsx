@@ -240,7 +240,6 @@ export function PuzzleScreen({
       </section>
       <PuzzleHud
         level={level}
-        moveCount={moveCount}
         elapsedTime={elapsedTime}
         onUndo={() => undefined}
         onHint={handleHint}

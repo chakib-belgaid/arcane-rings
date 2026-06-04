@@ -273,11 +273,6 @@ function PuzzleScreen({
     <main className="game-screen">
       <div className="grove-vignette" aria-hidden="true" />
       <header className={["hud-top", canShowCouplingMap ? "" : "is-no-map"].join(" ")}>
-        <div className="moves-plaque">
-          <span>Moves</span>
-          <strong>{runtime.totalTickMoves}</strong>
-          <em>/ {demoLevel.moveBudget}</em>
-        </div>
         <IconButton label="Undo" onClick={() => onDispatch({ type: "undo" })} disabled={runtime.moveHistory.length === 0}>
           <UndoIcon />
         </IconButton>

@@ -115,7 +115,7 @@ describe("Project Circles menu and overlay UI", () => {
     await user.click(screen.getByRole("button", { name: "Play" }));
     await user.click(screen.getByTestId("puzzle-canvas"));
 
-    expect(screen.getByText("Moves").nextElementSibling?.textContent).toBe("1");
+    expect(screen.queryByText("Moves")).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Complete fixture level" }));
 
