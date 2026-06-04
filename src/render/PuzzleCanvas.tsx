@@ -3,25 +3,31 @@ import { assets } from "../assets";
 import { getAffectedRings, getCurrentOffsets, getPreviewOffsets } from "../game/gameState";
 import type { GameAction, Level, RuntimeState } from "../game/types";
 import { modNorm } from "../math/mod";
-import { drawPuzzle, type PuzzleGeometry } from "./ringRenderer";
+import { drawPuzzle, type PuzzleGeometry, type RingBurst } from "./ringRenderer";
 
 type PuzzleCanvasProps = {
   level: Level;
   runtime: RuntimeState;
   inputLocked: boolean;
   highContrast: boolean;
+  reducedMotion: boolean;
   dispatch: (action: GameAction) => void;
 };
 
-export function PuzzleCanvas({ level, runtime, inputLocked, highContrast, dispatch }: PuzzleCanvasProps) {
+const COMMIT_BURST_DURATION = 560;
+
+export function PuzzleCanvas({ level, runtime, inputLocked, highContrast, reducedMotion, dispatch }: PuzzleCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const geometryRef = useRef<PuzzleGeometry | null>(null);
   const dragRef = useRef<{ pointerId: number; ring: number; startAngle: number; snappedTicks: number } | null>(null);
   const runtimeRef = useRef(runtime);
   const highContrastRef = useRef(highContrast);
+  const reducedMotionRef = useRef(reducedMotion);
   const displayedOffsetsRef = useRef<number[]>([]);
   const animationRef = useRef<number | null>(null);
+  const commitBurstRef = useRef<RingBurst | null>(null);
+  const lastMoveCountRef = useRef(runtime.moveHistory.length);
   const [imageReady, setImageReady] = useState(false);
 
   useEffect(() => {
@@ -38,6 +44,20 @@ export function PuzzleCanvas({ level, runtime, inputLocked, highContrast, dispat
   useLayoutEffect(() => {
     runtimeRef.current = runtime;
     highContrastRef.current = highContrast;
+    reducedMotionRef.current = reducedMotion;
+
+    if (runtime.moveHistory.length < lastMoveCountRef.current) {
+      commitBurstRef.current = null;
+    }
+
+    if (runtime.moveHistory.length > lastMoveCountRef.current) {
+      const lastMove = runtime.moveHistory.at(-1);
+      if (lastMove) {
+        commitBurstRef.current = { ring: lastMove.controlRing, startedAtMs: performance.now() };
+      }
+    }
+
+    lastMoveCountRef.current = runtime.moveHistory.length;
   });
 
   useLayoutEffect(() => {
@@ -66,7 +86,7 @@ export function PuzzleCanvas({ level, runtime, inputLocked, highContrast, dispat
 
     resizeCanvas();
     animateToOffsets(getPreviewOffsets(level, runtime), runtime.selectedRing);
-  }, [highContrast, imageReady, level, runtime]);
+  }, [highContrast, imageReady, level, reducedMotion, runtime]);
 
   function ringFromPoint(clientX: number, clientY: number): number | null {
     const canvas = canvasRef.current;
@@ -173,7 +193,7 @@ export function PuzzleCanvas({ level, runtime, inputLocked, highContrast, dispat
     }
   }
 
-  function drawOffsets(offsets: number[], selectedRing: number | null) {
+  function drawOffsets(offsets: number[], selectedRing: number | null, nowMs = performance.now()) {
     const canvas = canvasRef.current;
     const image = imageRef.current;
     if (!canvas || !image) {
@@ -188,7 +208,13 @@ export function PuzzleCanvas({ level, runtime, inputLocked, highContrast, dispat
       affectedRings: getAffectedRings(level, selectedRing),
       highlightedRing: runtimeState.highlightedRing,
       solved: runtimeState.isSolved,
-      highContrast: highContrastRef.current
+      highContrast: highContrastRef.current,
+      effects: {
+        nowMs,
+        reducedMotion: reducedMotionRef.current,
+        commitBurst: commitBurstRef.current,
+        dragRing: dragRef.current?.ring ?? null
+      }
     });
   }
 
@@ -200,6 +226,12 @@ export function PuzzleCanvas({ level, runtime, inputLocked, highContrast, dispat
 
   function animateToOffsets(targetOffsets: number[], selectedRing: number | null) {
     cancelAnimation();
+
+    if (reducedMotionRef.current) {
+      drawOffsets(targetOffsets, selectedRing);
+      commitBurstRef.current = null;
+      return;
+    }
 
     const startOffsets = displayedOffsetsRef.current.length === targetOffsets.length
       ? displayedOffsetsRef.current
@@ -213,9 +245,9 @@ export function PuzzleCanvas({ level, runtime, inputLocked, highContrast, dispat
       const offsets = targetOffsets.map((target, index) =>
         modNorm((startOffsets[index] ?? target) + shortestOffsetDelta(startOffsets[index] ?? target, target, level.q) * eased, level.q)
       );
-      drawOffsets(offsets, selectedRing);
+      drawOffsets(offsets, selectedRing, now);
 
-      if (progress < 1) {
+      if (progress < 1 || hasLiveEffects(now)) {
         animationRef.current = requestAnimationFrame(step);
       } else {
         animationRef.current = null;
@@ -223,6 +255,20 @@ export function PuzzleCanvas({ level, runtime, inputLocked, highContrast, dispat
     };
 
     animationRef.current = requestAnimationFrame(step);
+  }
+
+  function hasLiveEffects(nowMs: number): boolean {
+    const commitBurst = commitBurstRef.current;
+    if (!commitBurst) {
+      return false;
+    }
+
+    if (nowMs - commitBurst.startedAtMs <= COMMIT_BURST_DURATION) {
+      return true;
+    }
+
+    commitBurstRef.current = null;
+    return false;
   }
 
   function cancelAnimation() {

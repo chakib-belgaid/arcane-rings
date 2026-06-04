@@ -12,6 +12,7 @@ import {
   type UserSettings
 } from "../persistence/saveData";
 import { PuzzleCanvas } from "../render/PuzzleCanvas";
+import { AmbientParticles } from "./effects/AmbientParticles";
 import {
   BookIcon,
   CalendarIcon,
@@ -211,7 +212,7 @@ function MainMenu({
 
   return (
     <main className="menu-screen">
-      <div className="fireflies" aria-hidden="true" />
+      <AmbientParticles variant="menu" />
       <section className="title-medallion" aria-label="Project Circles">
         <span>Project</span>
         <strong>Circles</strong>
@@ -272,6 +273,7 @@ function PuzzleScreen({
   return (
     <main className="game-screen">
       <div className="grove-vignette" aria-hidden="true" />
+      <AmbientParticles variant="game" />
       <header className={["hud-top", canShowCouplingMap ? "" : "is-no-map"].join(" ")}>
         <IconButton label="Undo" onClick={() => onDispatch({ type: "undo" })} disabled={runtime.moveHistory.length === 0}>
           <UndoIcon />
@@ -303,6 +305,7 @@ function PuzzleScreen({
           runtime={runtime}
           inputLocked={overlay !== null}
           highContrast={settings.highContrastBorders}
+          reducedMotion={settings.reducedMotion}
           dispatch={onDispatch}
         />
       </section>
