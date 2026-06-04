@@ -80,7 +80,9 @@ export const fixtureLevel: PuzzleLevelFixture = {
   difficulty: "medium",
   rings: 5,
   ticks: 12,
-  moves: 18,
+  moves: 7,
+  initialOffsets: [11, 0, 4, 3, 2],
+  solution: [1, -2, -3, 1, 0],
   showReferenceThumbnail: true,
   showCouplingHints: true,
   edges: [

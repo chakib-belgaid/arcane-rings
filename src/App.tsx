@@ -27,18 +27,6 @@ function readStoredSettings(): AppSettings {
   }
 }
 
-function shouldExposeFixtureControls(): boolean {
-  if (import.meta.env.MODE === "test") {
-    return true;
-  }
-
-  try {
-    return new URLSearchParams(window.location.search).has("fixtureControls");
-  } catch {
-    return false;
-  }
-}
-
 export function App() {
   const [screen, setScreen] = useState<AppScreen>("menu");
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyName>("medium");
@@ -50,7 +38,6 @@ export function App() {
   const [puzzleSessionId, setPuzzleSessionId] = useState(0);
   const imageChoices = useMemo(() => [...defaultImagePresets, ...uploadedImages], [uploadedImages]);
   const selectedImage = imageChoices.find((image) => image.id === selectedImageId) ?? defaultImagePresets[0];
-  const fixtureControlsEnabled = useMemo(() => shouldExposeFixtureControls(), []);
 
   const openLevels = (difficulty: DifficultyName) => {
     setSelectedDifficulty(difficulty);
@@ -155,10 +142,9 @@ export function App() {
           inputBlocked={settingsOpen || result !== null}
           referenceDefault={settings.referenceDefault}
           colorblindCoupling={settings.colorblindCoupling}
-          fixtureControlsEnabled={fixtureControlsEnabled}
           onMenu={() => setScreen("menu")}
           onSettings={() => setSettingsOpen(true)}
-          onFixtureComplete={setResult}
+          onComplete={setResult}
         />
       ) : null}
 
