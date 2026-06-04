@@ -5,12 +5,20 @@ import { IconButton } from "../components/IconButton";
 type MainMenuProps = {
   onPlay: () => void;
   onDaily: () => void;
+  dailyDisabled?: boolean;
   onDifficulty: () => void;
   onCollection: () => void;
   onSettings: () => void;
 };
 
-export function MainMenu({ onPlay, onDaily, onDifficulty, onCollection, onSettings }: MainMenuProps) {
+export function MainMenu({
+  onPlay,
+  onDaily,
+  dailyDisabled = false,
+  onDifficulty,
+  onCollection,
+  onSettings,
+}: MainMenuProps) {
   return (
     <main className="menu-screen">
       <div className="ring-sigil" aria-hidden="true">
@@ -23,7 +31,13 @@ export function MainMenu({ onPlay, onDaily, onDifficulty, onCollection, onSettin
         <h1 id="main-title">Project Circles</h1>
         <div className="menu-actions" aria-label="Main menu actions">
           <IconButton icon={Play} label="Play" text="Play" variant="primary" onClick={onPlay} />
-          <IconButton icon={CalendarDays} label="Daily puzzle" text="Daily puzzle" onClick={onDaily} />
+          <IconButton
+            icon={CalendarDays}
+            label="Daily puzzle"
+            text="Daily puzzle"
+            onClick={onDaily}
+            disabled={dailyDisabled}
+          />
           <IconButton icon={Gauge} label="Difficulty selection" text="Difficulty" onClick={onDifficulty} />
           <IconButton icon={Images} label="Image collection" text="Image collection" onClick={onCollection} />
           <IconButton icon={Settings} label="Settings" text="Settings" onClick={onSettings} />

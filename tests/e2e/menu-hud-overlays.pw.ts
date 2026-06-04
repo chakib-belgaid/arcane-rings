@@ -10,6 +10,7 @@ test("first-load menu flow starts a puzzle and opens overlays", async ({ page },
   await expect(page.getByTestId("puzzle-stage")).toBeVisible();
   await expect(page.getByTestId("puzzle-hud")).toHaveClass(/hud--compact/);
   await expect(page.getByTestId("puzzle-stage")).toHaveAttribute("data-input-gated", "false");
+  await expect(page.getByRole("button", { name: "Complete fixture level" })).toHaveCount(0);
   mkdirSync("output/playwright", { recursive: true });
   await page.screenshot({ path: `output/playwright/${testInfo.project.name}-puzzle-flow.png` });
 
@@ -96,7 +97,7 @@ test("mobile portrait keeps the puzzle center and lower-middle clear", async ({ 
 });
 
 test("win screen exposes scoring and next action", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?fixtureControls=1");
   await page.getByRole("button", { name: "Play" }).click();
   await page.getByRole("button", { name: "Complete fixture level" }).click();
 
@@ -106,7 +107,14 @@ test("win screen exposes scoring and next action", async ({ page }) => {
   await expect(page.getByTestId("win-duration")).toContainText("Duration");
   await expect(page.getByTestId("win-tick-cost")).toContainText("0 ticks");
   await expect(page.getByTestId("win-best-score")).toContainText("Best score");
-  await expect(page.getByRole("button", { name: "Next level" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Play again" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Main menu", exact: true })).toBeVisible();
+
+  const playAgainBox = await page.getByRole("button", { name: "Play again" }).boundingBox();
+  const viewport = page.viewportSize();
+  expect(playAgainBox).not.toBeNull();
+  expect(playAgainBox!.y + playAgainBox!.height).toBeLessThanOrEqual(viewport?.height ?? 0);
 });
 
 test("image collection supports generated presets and image upload", async ({ page }) => {

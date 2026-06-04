@@ -35,7 +35,7 @@ describe("Project Circles menu and overlay UI", () => {
 
     expect(screen.getByRole("heading", { name: "Project Circles" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Daily puzzle" })).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Daily puzzle" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByRole("button", { name: "Difficulty selection" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Image collection" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Settings" })).toBeTruthy();
@@ -49,6 +49,11 @@ describe("Project Circles menu and overlay UI", () => {
     expect(screen.getByRole("heading", { name: "Difficulty" })).toBeTruthy();
     expect(screen.getByText("Beginner")).toBeTruthy();
     expect(screen.getByText("Expert")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Open Beginner levels" }));
+    expect(screen.getByRole("heading", { name: "Beginner Levels" })).toBeTruthy();
+    expect(screen.getByText("No unlocked Beginner levels yet.")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Back to difficulty" }));
 
     await user.click(screen.getByRole("button", { name: "Open Medium levels" }));
     expect(screen.getByRole("heading", { name: "Medium Levels" })).toBeTruthy();
@@ -64,6 +69,17 @@ describe("Project Circles menu and overlay UI", () => {
     expect(screen.getByTestId("puzzle-stage").getAttribute("data-input-gated")).toBe("false");
     expect(screen.getByTestId("puzzle-hud").classList.contains("hud--compact")).toBe(true);
     expect(screen.queryByTestId("normal-play-center-overlay")).toBeNull();
+    expect((screen.getByRole("button", { name: "Undo" }) as HTMLButtonElement).disabled).toBe(true);
+
+    const initialOffsets = screen.getByTestId("puzzle-canvas").getAttribute("data-offsets");
+    await user.click(screen.getByTestId("puzzle-canvas"));
+    expect(screen.getByText("Moves").nextElementSibling?.textContent).toBe("1");
+    expect((screen.getByRole("button", { name: "Undo" }) as HTMLButtonElement).disabled).toBe(false);
+
+    await user.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByText("Moves").nextElementSibling?.textContent).toBe("0");
+    expect(screen.getByTestId("puzzle-canvas").getAttribute("data-offsets")).toBe(initialOffsets);
+    expect((screen.getByRole("button", { name: "Undo" }) as HTMLButtonElement).disabled).toBe(true);
 
     const couplingButton = screen.getByRole("button", { name: "Open coupling map" });
     await user.click(couplingButton);
@@ -91,6 +107,23 @@ describe("Project Circles menu and overlay UI", () => {
     expect(within(dialog).getByLabelText("Sound effects")).toBeTruthy();
     expect(within(dialog).getByLabelText("High contrast ring borders")).toBeTruthy();
     expect(within(dialog).getByRole("button", { name: "Reset progress" })).toBeTruthy();
+
+    await user.click(within(dialog).getByLabelText("Reduced motion"));
+    expect((within(dialog).getByLabelText("Reduced motion") as HTMLInputElement).checked).toBe(true);
+
+    await user.click(within(dialog).getByRole("button", { name: "Preview sound effects" }));
+    expect(within(dialog).getByRole("status").textContent).toContain("Sound preview played");
+
+    await user.click(within(dialog).getByRole("button", { name: "Restore defaults" }));
+    expect((within(dialog).getByLabelText("Reduced motion") as HTMLInputElement).checked).toBe(false);
+    expect(within(dialog).getByRole("status").textContent).toContain("Defaults restored");
+
+    await user.click(within(dialog).getByLabelText("High contrast ring borders"));
+    await user.click(within(dialog).getByRole("button", { name: "Close settings" }));
+    await user.click(settingsButton);
+
+    const reopened = screen.getByRole("dialog", { name: "Settings" });
+    expect((within(reopened).getByLabelText("High contrast ring borders") as HTMLInputElement).checked).toBe(true);
   });
 
   test("solution reference opens fullscreen and gates puzzle input", async () => {
@@ -99,6 +132,9 @@ describe("Project Circles menu and overlay UI", () => {
 
     await user.click(screen.getByRole("button", { name: "Play" }));
     expect(screen.getByTestId("puzzle-stage").getAttribute("data-input-gated")).toBe("false");
+    expect(screen.getByRole("button", { name: "Toggle reference thumbnail" }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
 
     await user.click(screen.getByRole("button", { name: "Open solution reference fullscreen" }));
     expect(screen.getByRole("dialog", { name: "Solution Reference" })).toBeTruthy();
@@ -106,6 +142,31 @@ describe("Project Circles menu and overlay UI", () => {
 
     await user.click(screen.getByRole("button", { name: "Close solution reference" }));
     expect(screen.getByTestId("puzzle-stage").getAttribute("data-input-gated")).toBe("false");
+
+    await user.click(screen.getByRole("button", { name: "Toggle reference thumbnail" }));
+    expect(screen.getByRole("button", { name: "Toggle reference thumbnail" }).getAttribute("aria-pressed")).toBe(
+      "false",
+    );
+    expect(screen.queryByRole("button", { name: "Open solution reference fullscreen" })).toBeNull();
+  });
+
+  test("hint control advances through bounded feedback layers", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Play" }));
+
+    const hint = screen.getByRole("button", { name: "Hint" });
+    await user.click(hint);
+    expect(screen.getByText("Focus on the ring that shifts the most neighbors.")).toBeTruthy();
+    expect((hint as HTMLButtonElement).disabled).toBe(false);
+
+    await user.click(hint);
+    expect(screen.getByText("Ring 3 still needs adjustment.")).toBeTruthy();
+
+    await user.click(hint);
+    expect(screen.getByText("Try ring 3 counterclockwise by 3 ticks.")).toBeTruthy();
+    expect((hint as HTMLButtonElement).disabled).toBe(true);
   });
 
   test("completion report uses current session movements, duration, and best score", async () => {
@@ -178,6 +239,7 @@ describe("Project Circles menu and overlay UI", () => {
     await user.upload(screen.getByTestId("image-upload-input"), file);
 
     expect(await screen.findByText("custom puzzle")).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toContain("custom puzzle added");
     expect(screen.getByRole("button", { name: "Select custom puzzle" }).getAttribute("aria-pressed")).toBe("true");
 
     await user.click(screen.getByRole("button", { name: "Play selected image" }));
@@ -219,7 +281,7 @@ describe("Win screen shell", () => {
     expect(screen.getByTestId("win-tick-cost").textContent).toContain("24 ticks");
     expect(screen.getByText("Optimal ticks")).toBeTruthy();
     expect(screen.getByText("Hints")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Next level" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Play again" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
   });
 });

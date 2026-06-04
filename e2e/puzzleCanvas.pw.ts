@@ -33,6 +33,11 @@ test("pointer drag previews affected rings before committing offsets", async ({ 
   await expect(host).toHaveAttribute("data-selected-ring", "");
   await expect(host).toHaveAttribute("data-preview-ticks", "0");
   await expect(host).not.toHaveAttribute("data-offsets", initialOffsets ?? "");
+  await expect(page.getByRole("button", { name: "Undo" })).toBeEnabled();
+
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(host).toHaveAttribute("data-offsets", initialOffsets ?? "");
+  await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
 });
 
 test("sub-tick pointer drag keeps rotation preview continuous", async ({ page }) => {
