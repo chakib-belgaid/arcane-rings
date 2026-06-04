@@ -1,5 +1,5 @@
-const CACHE_NAME = "project-circles-shell-v2";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon.svg"];
+const CACHE_NAME = "arcane-rings-shell-v2";
+const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon.svg", "/brand/arcane-rings-logo.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

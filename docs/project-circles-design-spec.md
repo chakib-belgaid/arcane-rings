@@ -1,8 +1,8 @@
-# Project Circles Design Spec
+# Arcane Rings Design Spec
 
 ## 1. Product Summary
 
-Project Circles is a mobile-first PWA puzzle game about restoring circular images. A square-cropped picture is displayed inside a circle and split into concentric rings. Each ring has a discrete rotation offset. The player drags rings clockwise or counterclockwise to align the image, but rotating one control ring can rotate multiple visual rings according to a level-specific coupling matrix.
+Arcane Rings is a mobile-first PWA puzzle game about restoring circular images. A square-cropped picture is displayed inside a circle and split into concentric rings. Each ring has a discrete rotation offset. The player drags rings clockwise or counterclockwise to align the image, but rotating one control ring can rotate multiple visual rings according to a level-specific coupling matrix.
 
 The core puzzle equation is:
 

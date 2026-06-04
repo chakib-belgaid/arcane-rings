@@ -1,6 +1,6 @@
 # App Shell Integration
 
-This branch establishes the PWA and React shell for Project Circles. It intentionally does not implement the math engine, level generation, image fairness checks, or production renderer.
+This branch establishes the PWA and React shell for Arcane Rings. It intentionally does not implement the math engine, level generation, image fairness checks, or production renderer.
 
 ## Public Contracts
 

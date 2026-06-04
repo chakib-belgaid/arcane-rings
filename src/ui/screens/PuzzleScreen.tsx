@@ -10,6 +10,7 @@ import { PuzzleCanvas, type PuzzleCanvasCommit } from "../../render/PuzzleCanvas
 import { applyPlayerMove, computeStars, createRuntimeState, selectHint, undoLastMove } from "../../state/gameState";
 import type { Hint } from "../../state/types";
 import { cyclicDistance, modNorm } from "../../math/mod";
+import { gameAudio } from "../../audio/gameAudio";
 import type { WinResult } from "./WinScreen";
 
 type PuzzleScreenProps = {
@@ -38,7 +39,7 @@ function formatDuration(milliseconds: number): string {
 }
 
 function bestScoreKey(levelId: string, imageTitle: string): string {
-  return `project-circles:best-score:${levelId}:${imageTitle}`;
+  return `arcane-rings:best-score:${levelId}:${imageTitle}`;
 }
 
 function readBestScore(key: string): BestScore | null {
@@ -193,6 +194,7 @@ export function PuzzleScreen({
       return;
     }
 
+    gameAudio.playClockworkRotation(cyclicDistance(deltaTicks, level.ticks));
     setRuntimeState((current) => applyPlayerMove(current, matrix, controlRing, deltaTicks, level.ticks, Date.now()));
   }, [inputGated, level.ticks, matrix]);
 
@@ -200,15 +202,22 @@ export function PuzzleScreen({
     if (inputGated) {
       return;
     }
-
-    setRuntimeState((current) => undoLastMove(current, matrix, level.ticks));
-  }, [inputGated, level.ticks, matrix]);
-
-  const handleHint = useCallback(() => {
-    if (inputGated || !hint) {
+    if (runtimeState.moveHistory.length === 0) {
+      gameAudio.playSfx("blocked");
       return;
     }
 
+    gameAudio.playSfx("uiBack");
+    setRuntimeState((current) => undoLastMove(current, matrix, level.ticks));
+  }, [inputGated, level.ticks, matrix, runtimeState.moveHistory.length]);
+
+  const handleHint = useCallback(() => {
+    if (inputGated || !hint) {
+      gameAudio.playSfx("blocked");
+      return;
+    }
+
+    gameAudio.playSfx("hint");
     setHintLayer((layer) => {
       const nextLayer = Math.min(layer + 1, 3);
       if (nextLayer !== layer) {
@@ -231,6 +240,7 @@ export function PuzzleScreen({
       writeBestScore(storageKey, best);
     }
 
+    gameAudio.playSfx("complete");
     setCompletedAtMs(finalElapsedMs);
     onComplete({
       title: `${imageTitle} Restored`,
@@ -319,7 +329,10 @@ export function PuzzleScreen({
             aria-label="Open solution reference fullscreen"
             aria-haspopup="dialog"
             data-testid="solution-reference-thumb"
-            onClick={() => setSolutionOpen(true)}
+            onClick={() => {
+              gameAudio.playSfx("reference");
+              setSolutionOpen(true);
+            }}
           >
             <img src={imageSrc} alt="" />
           </button>
@@ -339,23 +352,35 @@ export function PuzzleScreen({
         onUndo={handleUndo}
         onHint={handleHint}
         hintDisabled={!hint}
-        onToggleReference={() => setReferenceVisible((visible) => !visible)}
+        onToggleReference={() => {
+          gameAudio.playSfx("uiSelect");
+          setReferenceVisible((visible) => !visible);
+        }}
         referenceVisible={referenceVisible}
-        onCouplingMap={() => setCouplingOpen(true)}
+        onCouplingMap={() => {
+          gameAudio.playSfx("coupling");
+          setCouplingOpen(true);
+        }}
         onSettings={onSettings}
       />
       {couplingOpen ? (
         <CouplingMapDialog
           colorblindCoupling={colorblindCoupling}
           edges={level.edges}
-          onClose={() => setCouplingOpen(false)}
+          onClose={() => {
+            gameAudio.playSfx("uiBack");
+            setCouplingOpen(false);
+          }}
         />
       ) : null}
       {solutionOpen ? (
         <ModalShell
           title="Solution Reference"
           closeLabel="Close solution reference"
-          onClose={() => setSolutionOpen(false)}
+          onClose={() => {
+            gameAudio.playSfx("uiBack");
+            setSolutionOpen(false);
+          }}
           className="solution-modal"
         >
           <div className="solution-modal__image-wrap">

@@ -7,7 +7,7 @@ export function registerServiceWorker() {
 
   window.addEventListener("load", () => {
     navigator.serviceWorker.register(APP_CONFIG.pwa.serviceWorkerPath).catch((error: unknown) => {
-      console.warn("Project Circles service worker registration failed", error);
+      console.warn("Arcane Rings service worker registration failed", error);
     });
   });
 }

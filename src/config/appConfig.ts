@@ -1,5 +1,5 @@
 export const APP_CONFIG = {
-  appName: "Project Circles",
+  appName: "Arcane Rings",
   placeholderSeed: "app-shell-v1",
   pwa: {
     serviceWorkerPath: "/sw.js",

@@ -12,7 +12,7 @@ test.describe("responsive layout", () => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto("/");
 
-      await expect(page.getByRole("heading", { name: "Project Circles" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Arcane Rings" })).toBeVisible();
       await expectLayoutFitsViewport(page);
       await expectVisibleButtonsAreTouchSafe(page);
 

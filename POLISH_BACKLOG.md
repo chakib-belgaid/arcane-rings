@@ -1,4 +1,4 @@
-# Project Circles Polish Backlog
+# Arcane Rings Polish Backlog
 
 Closer pass started on 2026-06-03. Scope is limited to finishing existing visible surfaces; no new game modes or broad redesign.
 

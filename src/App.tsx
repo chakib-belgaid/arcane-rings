@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { gameAudio } from "./audio/gameAudio";
 import { MainMenu } from "./ui/screens/MainMenu";
 import { DifficultySelection } from "./ui/screens/DifficultySelection";
 import { LevelSelection } from "./ui/screens/LevelSelection";
@@ -39,12 +40,40 @@ export function App() {
   const imageChoices = useMemo(() => [...defaultImagePresets, ...uploadedImages], [uploadedImages]);
   const selectedImage = imageChoices.find((image) => image.id === selectedImageId) ?? defaultImagePresets[0];
 
+  useEffect(() => {
+    gameAudio.preload();
+    return () => gameAudio.stopMusic();
+  }, []);
+
+  useEffect(() => {
+    gameAudio.setSettings({
+      music: settings.music,
+      soundEffects: settings.soundEffects,
+    });
+  }, [settings.music, settings.soundEffects]);
+
+  useEffect(() => {
+    gameAudio.setMusicTrack(screen === "puzzle" ? "gameplay" : "menu");
+  }, [screen]);
+
+  const openScreen = (nextScreen: AppScreen) => {
+    gameAudio.playSfx("uiSelect");
+    setScreen(nextScreen);
+  };
+
+  const goBack = (nextScreen: AppScreen) => {
+    gameAudio.playSfx("uiBack");
+    setScreen(nextScreen);
+  };
+
   const openLevels = (difficulty: DifficultyName) => {
+    gameAudio.playSfx("uiSelect");
     setSelectedDifficulty(difficulty);
     setScreen("levels");
   };
 
   const startPuzzle = () => {
+    gameAudio.playSfx("uiSelect");
     setResult(null);
     setPuzzleSessionId((sessionId) => sessionId + 1);
     setScreen("puzzle");
@@ -69,6 +98,7 @@ export function App() {
 
     setUploadedImages((images) => [uploadedImage, ...images]);
     setSelectedImageId(uploadedImage.id);
+    gameAudio.playSfx("uiSelect");
   };
 
   const updateSettings = (nextSettings: AppSettings) => {
@@ -104,20 +134,23 @@ export function App() {
           onPlay={startPuzzle}
           onDaily={startPuzzle}
           dailyDisabled
-          onDifficulty={() => setScreen("difficulty")}
-          onCollection={() => setScreen("collection")}
-          onSettings={() => setSettingsOpen(true)}
+          onDifficulty={() => openScreen("difficulty")}
+          onCollection={() => openScreen("collection")}
+          onSettings={() => {
+            gameAudio.playSfx("uiSelect");
+            setSettingsOpen(true);
+          }}
         />
       ) : null}
 
       {screen === "difficulty" ? (
-        <DifficultySelection onBack={() => setScreen("menu")} onOpenLevels={openLevels} />
+        <DifficultySelection onBack={() => goBack("menu")} onOpenLevels={openLevels} />
       ) : null}
 
       {screen === "levels" ? (
         <LevelSelection
           difficulty={selectedDifficulty}
-          onBack={() => setScreen("difficulty")}
+          onBack={() => goBack("difficulty")}
           onStart={startPuzzle}
         />
       ) : null}
@@ -126,8 +159,11 @@ export function App() {
         <ImageCollection
           images={imageChoices}
           selectedImageId={selectedImage.id}
-          onBack={() => setScreen("menu")}
-          onSelectImage={setSelectedImageId}
+          onBack={() => goBack("menu")}
+          onSelectImage={(imageId) => {
+            gameAudio.playSfx("uiSelect");
+            setSelectedImageId(imageId);
+          }}
           onUploadImage={addUploadedImage}
           onStart={startPuzzle}
         />
@@ -142,8 +178,11 @@ export function App() {
           inputBlocked={settingsOpen || result !== null}
           referenceDefault={settings.referenceDefault}
           colorblindCoupling={settings.colorblindCoupling}
-          onMenu={() => setScreen("menu")}
-          onSettings={() => setSettingsOpen(true)}
+          onMenu={() => goBack("menu")}
+          onSettings={() => {
+            gameAudio.playSfx("uiSelect");
+            setSettingsOpen(true);
+          }}
           onComplete={setResult}
         />
       ) : null}
@@ -153,7 +192,10 @@ export function App() {
           settings={settings}
           onSettingsChange={updateSettings}
           onResetProgress={resetProgress}
-          onClose={() => setSettingsOpen(false)}
+          onClose={() => {
+            gameAudio.playSfx("uiBack");
+            setSettingsOpen(false);
+          }}
           variant={screen === "puzzle" ? "puzzle" : "menu"}
         />
       ) : null}
@@ -164,6 +206,7 @@ export function App() {
           onNext={startPuzzle}
           onRetry={startPuzzle}
           onMenu={() => {
+            gameAudio.playSfx("uiBack");
             setResult(null);
             setScreen("menu");
           }}

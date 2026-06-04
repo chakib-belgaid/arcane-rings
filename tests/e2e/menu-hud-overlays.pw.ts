@@ -43,7 +43,7 @@ async function solvePuzzle(page: Page) {
 test("first-load menu flow starts a puzzle and opens overlays", async ({ page }, testInfo) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "Project Circles" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Arcane Rings" })).toBeVisible();
   await page.getByRole("button", { name: "Play" }).click();
 
   await expect(page.getByTestId("puzzle-stage")).toBeVisible();

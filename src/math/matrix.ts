@@ -1,5 +1,7 @@
 import { modNorm } from "./mod";
 
+export { matMulMod, matVecMod } from "./mod";
+
 export function inverseUnitLowerTriangular(matrix: number[][], q: number): number[][] {
   const n = matrix.length;
   const inverse = Array.from({ length: n }, () => Array.from({ length: n }, () => 0));

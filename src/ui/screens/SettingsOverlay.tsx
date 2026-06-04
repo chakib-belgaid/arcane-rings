@@ -15,6 +15,7 @@ type SettingsOverlayProps = {
 export type AppSettings = {
   reducedMotion: boolean;
   soundEffects: boolean;
+  music: boolean;
   haptics: boolean;
   referenceDefault: boolean;
   highContrastBorders: boolean;
@@ -24,6 +25,7 @@ export type AppSettings = {
 export const defaultAppSettings: AppSettings = {
   reducedMotion: false,
   soundEffects: true,
+  music: true,
   haptics: true,
   referenceDefault: true,
   highContrastBorders: false,
@@ -91,6 +93,12 @@ export function SettingsOverlay({
           label="Sound effects"
           checked={settings.soundEffects}
           onChange={setBoolean("soundEffects")}
+        />
+        <Toggle
+          id={`${id}-music`}
+          label="Music"
+          checked={settings.music}
+          onChange={setBoolean("music")}
         />
         <Toggle
           id={`${id}-haptics`}

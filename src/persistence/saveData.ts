@@ -33,7 +33,7 @@ export type SaveData = {
   unlockedImageIds: string[];
 };
 
-export const saveKey = "project-circles-save-v1";
+export const saveKey = "arcane-rings-save-v1";
 
 export const defaultSettings: UserSettings = {
   reducedMotion: false,

@@ -27,8 +27,8 @@ export function MainMenu({
         <span />
       </div>
       <section className="menu-panel" aria-labelledby="main-title">
-        <p className="menu-kicker">Arcane Rings</p>
-        <h1 id="main-title">Project Circles</h1>
+        <p className="menu-kicker">Moonlit ring puzzle</p>
+        <h1 id="main-title">Arcane Rings</h1>
         <div className="menu-actions" aria-label="Main menu actions">
           <IconButton icon={Play} label="Play" text="Play" variant="primary" onClick={onPlay} />
           <IconButton

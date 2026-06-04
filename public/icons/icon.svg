@@ -1,8 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
-  <title id="title">Project Circles icon</title>
-  <rect width="512" height="512" rx="96" fill="#0b1018" />
-  <circle cx="256" cy="256" r="170" fill="none" stroke="#8fb8d8" stroke-width="18" />
-  <circle cx="256" cy="256" r="112" fill="none" stroke="#7e6ea8" stroke-width="14" stroke-dasharray="80 34" />
-  <circle cx="256" cy="256" r="54" fill="none" stroke="#d4a85d" stroke-width="16" />
-  <path d="M256 76a180 180 0 0 1 162 102" fill="none" stroke="#e8eef7" stroke-width="10" stroke-linecap="round" opacity=".7" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Arcane Rings icon</title>
+  <desc id="desc">A moonlit concentric ring sigil for the Arcane Rings puzzle game.</desc>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="34%" r="74%">
+      <stop offset="0" stop-color="#174940" />
+      <stop offset=".56" stop-color="#071c16" />
+      <stop offset="1" stop-color="#020807" />
+    </radialGradient>
+    <linearGradient id="gold" x1="112" y1="88" x2="406" y2="426">
+      <stop offset="0" stop-color="#fff0bd" />
+      <stop offset=".52" stop-color="#c39d58" />
+      <stop offset="1" stop-color="#705327" />
+    </linearGradient>
+    <linearGradient id="teal" x1="106" y1="396" x2="402" y2="102">
+      <stop offset="0" stop-color="#27665c" />
+      <stop offset=".5" stop-color="#8fc9d6" />
+      <stop offset="1" stop-color="#f7ead2" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#020807" flood-opacity=".75" />
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#8fc9d6" flood-opacity=".35" />
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="104" fill="url(#bg)" />
+  <path d="M82 256h54M376 256h54M256 82v54M256 376v54" stroke="#f2d89c" stroke-width="9" stroke-linecap="round" opacity=".6" />
+  <g filter="url(#glow)">
+    <circle cx="256" cy="256" r="176" fill="none" stroke="url(#gold)" stroke-width="14" />
+    <circle cx="256" cy="256" r="128" fill="none" stroke="url(#teal)" stroke-width="24" stroke-dasharray="178 32 58 32" stroke-linecap="round" />
+    <circle cx="256" cy="256" r="72" fill="none" stroke="url(#gold)" stroke-width="18" stroke-dasharray="92 28" stroke-linecap="round" />
+    <circle cx="256" cy="256" r="29" fill="#f2d89c" />
+    <path d="M311 129a78 78 0 1 0 56 123a96 96 0 1 1-56-123Z" fill="#f7ead2" opacity=".95" />
+  </g>
 </svg>

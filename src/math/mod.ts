@@ -11,6 +11,11 @@ export function cyclicDistance(value: number, q: number): number {
   return Math.min(normalized, q - normalized);
 }
 
+export function shortestSignedDelta(value: number, q: number): number {
+  const normalized = modNorm(value, q);
+  return normalized > q / 2 ? normalized - q : normalized;
+}
+
 export function matVecMod(matrix: number[][], vector: number[], q: number): number[] {
   return matrix.map((row) =>
     modNorm(

@@ -359,7 +359,7 @@ function ImagePuzzleCanvas({
   const hostRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const dragRef = useRef<(PointerDragSession & { pointerId: number }) | null>(null);
+  const dragRef = useRef<(PointerDragSession & { canvasSize: number; pointerId: number }) | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const settleRunRef = useRef(0);
   const settleTimeoutRef = useRef<number | null>(null);
@@ -622,11 +622,12 @@ function ImagePuzzleCanvas({
       return;
     }
 
-    const point = eventPoint(event.nativeEvent, canvasRef.current);
+    const dragCanvasSize = canvasSize;
+    const point = eventPoint(event.nativeEvent, canvasRef.current, dragCanvasSize);
     const session = beginPointerDrag({
       ...point,
-      cx: canvasSize / 2,
-      cy: canvasSize / 2,
+      cx: dragCanvasSize / 2,
+      cy: dragCanvasSize / 2,
       ringRadii: resolvedRadii,
       q
     });
@@ -639,7 +640,7 @@ function ImagePuzzleCanvas({
     previewBaseOffsetsRef.current = [...displayOffsetsRef.current];
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = { ...session, pointerId: event.pointerId };
+    dragRef.current = { ...session, canvasSize: dragCanvasSize, pointerId: event.pointerId };
     setSelectedRing(session.controlRing);
     setPreviewTicks(0);
     setPreviewDeltaTicks(0);
@@ -651,11 +652,11 @@ function ImagePuzzleCanvas({
       return;
     }
 
-    const point = eventPoint(event.nativeEvent, canvasRef.current);
+    const point = eventPoint(event.nativeEvent, canvasRef.current, session.canvasSize);
     const ticks = updatePointerDrag(session, {
       ...point,
-      cx: canvasSize / 2,
-      cy: canvasSize / 2
+      cx: session.canvasSize / 2,
+      cy: session.canvasSize / 2
     });
     const visualTicks = session.previewDeltaTicks;
     const affected = computeAffectedRings(matrix, session.controlRing, q);
@@ -771,10 +772,12 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 }
 
-function eventPoint(event: PointerEvent, canvas: HTMLCanvasElement): { px: number; py: number } {
+function eventPoint(event: PointerEvent, canvas: HTMLCanvasElement, canvasSize: number): { px: number; py: number } {
   const bounds = canvas.getBoundingClientRect();
+  const scaleX = bounds.width > 0 ? canvasSize / bounds.width : 1;
+  const scaleY = bounds.height > 0 ? canvasSize / bounds.height : scaleX;
   return {
-    px: event.clientX - bounds.left,
-    py: event.clientY - bounds.top
+    px: (event.clientX - bounds.left) * scaleX,
+    py: (event.clientY - bounds.top) * scaleY
   };
 }

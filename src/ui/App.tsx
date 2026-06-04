@@ -1,9 +1,11 @@
 import { useEffect, useReducer, useState } from "react";
+import { gameAudio, type SoundEffect } from "../audio/gameAudio";
 import { assets } from "../assets";
 import { demoLevel } from "../levels/demoLevel";
 import { getStars, reducer as gameReducer } from "../game/gameState";
 import type { CouplingEdge, GameAction, RuntimeState } from "../game/types";
 import { createRuntimeState } from "../game/gameState";
+import { cyclicDistance } from "../math/mod";
 import {
   createDefaultSaveData,
   loadSaveData,
@@ -18,12 +20,14 @@ import {
   CalendarIcon,
   ChevronIcon,
   CollectionIcon,
+  HomeIcon,
   SettingsIcon,
 } from "./icons";
 
 type Screen = "menu" | "play";
 type Overlay = "settings" | "coupling" | "reference" | "hint" | "win" | "levels" | "daily" | "collection" | null;
 type RasterIconName = "reference" | "undo" | "hint" | "restart" | "settings" | "close";
+type OpenOverlay = (overlay: Overlay, sound?: SoundEffect | null) => void;
 
 const rasterIconPaths: Record<RasterIconName, string> = {
   reference: "/assets/ui/puzzle-icon-reference.png",
@@ -51,8 +55,25 @@ export default function App() {
   const [showReference, setShowReference] = useState(saveData.settings.showReferenceDefault);
 
   const dispatch = (action: GameAction) => {
+    playGameActionSound(action);
     dispatchRuntime(action);
   };
+
+  useEffect(() => {
+    gameAudio.preload();
+    return () => gameAudio.stopMusic();
+  }, []);
+
+  useEffect(() => {
+    gameAudio.setSettings({
+      music: saveData.settings.music,
+      soundEffects: saveData.settings.soundEffects
+    });
+  }, [saveData.settings.music, saveData.settings.soundEffects]);
+
+  useEffect(() => {
+    gameAudio.setMusicTrack(screen === "menu" ? "menu" : "gameplay");
+  }, [screen]);
 
   useEffect(() => {
     persistSaveData(saveData);
@@ -72,6 +93,7 @@ export default function App() {
   useEffect(() => {
     if (runtime.isSolved && runtime.solvedAt === null) {
       dispatch({ type: "completeIfSolved", now: Date.now() });
+      gameAudio.playSfx("complete");
       setOverlay("win");
     }
   }, [runtime.isSolved, runtime.solvedAt]);
@@ -79,6 +101,7 @@ export default function App() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && overlay !== null) {
+        gameAudio.playSfx("uiBack");
         setOverlay(null);
         return;
       }
@@ -88,6 +111,7 @@ export default function App() {
       }
 
       if (event.key === "Escape") {
+        gameAudio.playSfx("uiSelect");
         setOverlay((current) => (current === null ? "settings" : null));
         return;
       }
@@ -114,12 +138,13 @@ export default function App() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [overlay, runtime.selectedRing, screen]);
+  }, [overlay, runtime.moveHistory.length, runtime.selectedRing, screen]);
 
   const stars = getStars(demoLevel, runtime);
   const elapsedMs = (runtime.solvedAt ?? nowMs) - runtime.startedAt;
 
   function startLevel() {
+    gameAudio.playSfx("uiSelect");
     dispatch({ type: "restart", now: Date.now() });
     setScreen("play");
     setOverlay(null);
@@ -127,7 +152,72 @@ export default function App() {
   }
 
   function updateSettings(nextSettings: UserSettings) {
+    gameAudio.setSettings({
+      music: nextSettings.music,
+      soundEffects: nextSettings.soundEffects
+    });
+    if (nextSettings.soundEffects) {
+      gameAudio.playSfx("uiSelect");
+    } else if (nextSettings.music) {
+      gameAudio.unlock();
+    }
     setSaveData((current) => ({ ...current, settings: nextSettings }));
+  }
+
+  function openOverlay(nextOverlay: Overlay, sound?: SoundEffect | null) {
+    const effect = sound === undefined ? overlaySound(nextOverlay) : sound;
+    if (effect) {
+      gameAudio.playSfx(effect);
+    }
+    setOverlay(nextOverlay);
+  }
+
+  function closeOverlay(sound: SoundEffect | null = "uiBack") {
+    if (sound) {
+      gameAudio.playSfx(sound);
+    }
+    setOverlay(null);
+  }
+
+  function playGameActionSound(action: GameAction) {
+    switch (action.type) {
+      case "selectRing":
+        if (action.ring !== null && action.ring !== runtime.selectedRing) {
+          gameAudio.playSfx("ringSelect");
+        }
+        return;
+      case "commitRotation":
+        const tickDistance = cyclicDistance(action.deltaTicks, demoLevel.q);
+        if (tickDistance > 0) {
+          gameAudio.playClockworkRotation(tickDistance);
+        }
+        return;
+      case "undo":
+        if (runtime.moveHistory.length > 0) {
+          gameAudio.playSfx("uiBack");
+        } else {
+          gameAudio.playSfx("blocked");
+        }
+        return;
+      case "requestHint":
+        gameAudio.playSfx("hint");
+        return;
+      default:
+        return;
+    }
+  }
+
+  function overlaySound(nextOverlay: Overlay): SoundEffect | null {
+    if (nextOverlay === "reference") {
+      return "reference";
+    }
+    if (nextOverlay === "coupling") {
+      return "coupling";
+    }
+    if (nextOverlay === null) {
+      return null;
+    }
+    return "uiSelect";
   }
 
   function recordWin() {
@@ -168,7 +258,7 @@ export default function App() {
   return (
     <div className={["app", saveData.settings.reducedMotion ? "is-reduced-motion" : "", saveData.settings.highContrastBorders ? "is-high-contrast" : ""].join(" ")}>
       {screen === "menu" ? (
-        <MainMenu onPlay={startLevel} onOpenOverlay={setOverlay} saveData={saveData} />
+        <MainMenu onPlay={startLevel} onOpenOverlay={openOverlay} saveData={saveData} />
       ) : (
         <PuzzleScreen
           runtime={runtime}
@@ -178,27 +268,31 @@ export default function App() {
           settings={saveData.settings}
           onDispatch={dispatch}
           onMenu={() => {
+            gameAudio.playSfx("uiBack");
             setScreen("menu");
             setOverlay(null);
           }}
-          onOpenOverlay={setOverlay}
+          onOpenOverlay={openOverlay}
         />
       )}
 
       {overlay === "settings" && (
         <SettingsDialog
           settings={saveData.settings}
-          onClose={() => setOverlay(null)}
+          onClose={() => closeOverlay()}
           onChange={updateSettings}
-          onResetProgress={() => setSaveData(createDefaultSaveData())}
+          onResetProgress={() => {
+            gameAudio.playSfx("uiSelect");
+            setSaveData(createDefaultSaveData());
+          }}
         />
       )}
-      {overlay === "coupling" && <CouplingDrawer onClose={() => setOverlay(null)} />}
-      {overlay === "reference" && <ReferenceDialog onClose={() => setOverlay(null)} />}
-      {overlay === "hint" && <HintDialog edge={runtime.hintedCoupling} onClose={() => setOverlay(null)} />}
-      {overlay === "levels" && <ShellDialog title="Levels" icon={<BookIcon />} onClose={() => setOverlay(null)} primaryAction={startLevel} primaryLabel="Begin Hard Grove" />}
-      {overlay === "daily" && <ShellDialog title="Daily" icon={<CalendarIcon />} onClose={() => setOverlay(null)} primaryAction={startLevel} primaryLabel="Play Daily" />}
-      {overlay === "collection" && <CollectionDialog saveData={saveData} onClose={() => setOverlay(null)} onPlay={startLevel} />}
+      {overlay === "coupling" && <CouplingDrawer onClose={() => closeOverlay()} />}
+      {overlay === "reference" && <ReferenceDialog onClose={() => closeOverlay()} />}
+      {overlay === "hint" && <HintDialog edge={runtime.hintedCoupling} onClose={() => closeOverlay()} />}
+      {overlay === "levels" && <ShellDialog title="Levels" icon={<BookIcon />} onClose={() => closeOverlay()} primaryAction={startLevel} primaryLabel="Begin Hard Grove" />}
+      {overlay === "daily" && <ShellDialog title="Daily" icon={<CalendarIcon />} onClose={() => closeOverlay()} primaryAction={startLevel} primaryLabel="Play Daily" />}
+      {overlay === "collection" && <CollectionDialog saveData={saveData} onClose={() => closeOverlay()} onPlay={startLevel} />}
       {overlay === "win" && (
         <WinDialog
           stars={stars}
@@ -207,6 +301,7 @@ export default function App() {
           hintCount={runtime.hintCount}
           onRetry={startLevel}
           onMenu={() => {
+            gameAudio.playSfx("uiBack");
             setScreen("menu");
             setOverlay(null);
           }}
@@ -222,7 +317,7 @@ function MainMenu({
   saveData
 }: {
   onPlay: () => void;
-  onOpenOverlay: (overlay: Overlay) => void;
+  onOpenOverlay: OpenOverlay;
   saveData: SaveData;
 }) {
   const completed = Object.values(saveData.levelProgress).filter((progress) => progress.solved).length;
@@ -230,9 +325,10 @@ function MainMenu({
   return (
     <main className="menu-screen">
       <AmbientParticles variant="menu" />
-      <section className="title-medallion" aria-label="Project Circles">
-        <span>Project</span>
-        <strong>Circles</strong>
+      <section className="title-medallion" aria-label="Arcane Rings">
+        <h1 className="brand-lockup">
+          <img className="brand-logo" src="/brand/arcane-rings-logo.svg" alt="Arcane Rings" />
+        </h1>
       </section>
       <button className="play-button" onClick={onPlay}>
         Play
@@ -284,13 +380,14 @@ function PuzzleScreen({
   settings: UserSettings;
   onDispatch: (action: GameAction) => void;
   onMenu: () => void;
-  onOpenOverlay: (overlay: Overlay) => void;
+  onOpenOverlay: OpenOverlay;
 }) {
   const restartPuzzle = () => {
     if (runtime.moveHistory.length > 0 && !window.confirm("Restart this puzzle?")) {
       return;
     }
 
+    gameAudio.playSfx("uiSelect");
     onDispatch({ type: "restart", now: Date.now() });
   };
 
@@ -298,6 +395,9 @@ function PuzzleScreen({
     <main className="game-screen" data-testid="puzzle-stage" data-input-gated={String(overlay !== null)}>
       <div className="grove-vignette" aria-hidden="true" />
       <AmbientParticles variant="game" />
+      <button className="home-button" type="button" aria-label="Home" onClick={onMenu}>
+        <HomeIcon />
+      </button>
       <header className="puzzle-status" aria-label="Puzzle status">
         <div className="status-chip">
           <span>Time</span>
@@ -321,7 +421,7 @@ function PuzzleScreen({
       </section>
 
       <nav className="puzzle-action-dock" data-testid="puzzle-action-dock" aria-label="Puzzle actions">
-        <button className="reference-button" onClick={() => onOpenOverlay("reference")} aria-label="Open reference image">
+        <button className="reference-button" onClick={() => onOpenOverlay("reference", "reference")} aria-label="Open reference image">
           <span className="icon-shell">
             <RasterIcon name="reference" />
           </span>
@@ -335,7 +435,7 @@ function PuzzleScreen({
           badge={runtime.hintedCoupling ? "1" : undefined}
           onClick={() => {
             onDispatch({ type: "requestHint" });
-            onOpenOverlay("hint");
+            onOpenOverlay("hint", null);
           }}
         >
           <RasterIcon name="hint" />

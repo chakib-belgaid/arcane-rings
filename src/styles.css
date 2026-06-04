@@ -322,6 +322,21 @@ svg {
   white-space: nowrap;
 }
 
+.brand-lockup {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  margin: 0;
+}
+
+.brand-logo {
+  display: block;
+  width: min(100%, 286px);
+  height: auto;
+  max-height: 132px;
+  object-fit: contain;
+}
+
 .play-button {
   position: relative;
   z-index: 1;
@@ -497,19 +512,48 @@ svg {
   position: absolute;
   z-index: 5;
   top: max(14px, env(safe-area-inset-top));
-  left: 50%;
+  right: max(14px, env(safe-area-inset-right));
   display: grid;
-  grid-template-columns: repeat(2, minmax(106px, 1fr));
+  grid-template-columns: repeat(2, minmax(96px, 1fr));
   gap: 10px;
-  width: min(calc(100% - 32px), 322px);
-  transform: translateX(-50%);
+  width: min(calc(100% - 108px), 322px);
+}
+
+.home-button {
+  position: absolute;
+  z-index: 6;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(14px, env(safe-area-inset-left));
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  color: var(--text-ivory);
+  border: 1px solid rgba(242, 216, 156, 0.46);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(143, 201, 214, 0.16), transparent 56%),
+    linear-gradient(180deg, rgba(18, 62, 56, 0.78), rgba(3, 17, 14, 0.88)),
+    var(--asset-ui-skin) center / 420px;
+  box-shadow:
+    inset 0 0 16px rgba(244, 214, 131, 0.1),
+    inset 0 0 0 1px rgba(255, 239, 188, 0.08),
+    0 10px 28px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+.home-button svg {
+  width: 24px;
+  height: 24px;
 }
 
 .status-chip {
   display: grid;
   gap: 2px;
   min-height: 52px;
-  padding: 8px 16px 9px;
+  padding: 8px 12px 9px;
   color: var(--text-ivory);
   text-align: center;
   border: 1px solid rgba(242, 216, 156, 0.46);
@@ -599,7 +643,7 @@ svg {
   justify-items: center;
   align-content: end;
   gap: 5px;
-  min-width: 0;
+  min-width: 44px;
   min-height: 62px;
   padding: 0;
   color: var(--text-ivory);
@@ -939,6 +983,21 @@ svg {
     0 28px 70px rgba(0, 0, 0, 0.48);
 }
 
+.puzzle-canvas-host {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.puzzle-canvas-host .puzzle-canvas {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+}
+
 .reference-thumb {
   position: absolute;
   right: 2%;
@@ -954,6 +1013,19 @@ svg {
   border-radius: 50%;
   background: rgba(2, 8, 7, 0.76);
   cursor: pointer;
+  transform: scale(1);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+  will-change: transform;
+}
+
+.reference-thumb:hover,
+.reference-thumb:focus-visible {
+  border-color: var(--pc-border-strong);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.34);
+  transform: scale(1.14);
 }
 
 .reference-thumb img,
@@ -1051,6 +1123,56 @@ svg {
   padding: max(22px, env(safe-area-inset-top)) 18px max(22px, env(safe-area-inset-bottom));
   background: rgba(1, 8, 7, 0.64);
   backdrop-filter: blur(9px);
+}
+
+.modal-shell {
+  display: grid;
+  gap: 14px;
+  width: min(92vw, 520px);
+  max-height: min(86dvh, 720px);
+  overflow: auto;
+  padding: 16px;
+  color: var(--text-ivory);
+  border: 1px solid rgba(242, 216, 156, 0.72);
+  border-radius: var(--pc-radius);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(143, 201, 214, 0.18), transparent 42%),
+    linear-gradient(180deg, rgba(18, 62, 56, 0.94), rgba(4, 20, 17, 0.96)),
+    var(--asset-ui-skin) center / 680px,
+    url("/assets/grove-texture.png") center / 360px repeat;
+  box-shadow:
+    inset 0 0 28px rgba(244, 214, 131, 0.12),
+    inset 0 0 0 1px rgba(255, 240, 194, 0.12),
+    0 24px 70px rgba(0, 0, 0, 0.62);
+}
+
+.modal-shell__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.modal-shell__header h2 {
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.solution-modal {
+  width: min(96vw, 1240px);
+  min-height: 94dvh;
+  max-height: 96dvh;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.solution-modal__image-wrap {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 
 .modal-panel {

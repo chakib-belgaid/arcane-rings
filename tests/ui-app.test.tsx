@@ -1,3 +1,4 @@
+import React from "react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -74,11 +75,11 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-describe("Project Circles menu and overlay UI", () => {
+describe("Arcane Rings menu and overlay UI", () => {
   test("main menu exposes the required product flows", async () => {
     render(<App />);
 
-    expect(screen.getByRole("heading", { name: "Project Circles" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Arcane Rings" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
     expect((screen.getByRole("button", { name: "Daily puzzle" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByRole("button", { name: "Difficulty selection" })).toBeTruthy();

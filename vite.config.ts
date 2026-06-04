@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       manifest: {
-        name: "Project Circles",
-        short_name: "Circles",
+        name: "Arcane Rings",
+        short_name: "Arcane",
         description: "Restore enchanted circular images by rotating coupled rings.",
         theme_color: "#071712",
         background_color: "#071712",
@@ -17,9 +17,9 @@ export default defineConfig({
         orientation: "portrait",
         icons: [
           {
-            src: "/assets/puzzle-grove.png",
-            sizes: "512x512",
-            type: "image/png",
+            src: "/icons/icon.svg",
+            sizes: "any",
+            type: "image/svg+xml",
             purpose: "any"
           }
         ]

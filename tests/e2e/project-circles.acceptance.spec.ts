@@ -11,7 +11,7 @@ import {
 test("first-load menu starts seeded and generated levels", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "Project Circles" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Arcane Rings" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Daily puzzle" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Difficulty selection" })).toBeVisible();

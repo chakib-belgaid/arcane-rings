@@ -89,7 +89,7 @@ function renderMenu() {
   app.innerHTML = `
     <main class="menu">
       <section class="menu-panel" aria-label="Main menu">
-        <h1>Project Circles</h1>
+        <h1>Arcane Rings</h1>
         <button type="button" data-action="open-play">Play</button>
         <button type="button">Daily puzzle</button>
         <button type="button">Difficulty selection</button>
@@ -106,7 +106,7 @@ function renderPlayMenu() {
   app.innerHTML = `
     <main class="menu">
       <section class="menu-panel" aria-label="Play menu">
-        <h1>Project Circles</h1>
+        <h1>Arcane Rings</h1>
         <button type="button" data-action="start-seeded">Start seeded level</button>
         <label class="seed-form">
           Generator seed

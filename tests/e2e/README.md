@@ -1,4 +1,4 @@
-# Project Circles Playwright Harness
+# Arcane Rings Playwright Harness
 
 The default Playwright command builds and previews the integrated React app, then
 runs the app-shell and browser puzzle checks:
