@@ -322,8 +322,10 @@ function PuzzleScreen({
 
       <nav className="puzzle-action-dock" data-testid="puzzle-action-dock" aria-label="Puzzle actions">
         <button className="reference-button" onClick={() => onOpenOverlay("reference")} aria-label="Open reference image">
-          <RasterIcon name="reference" />
-          <span className="dock-label">Ref</span>
+          <span className="icon-shell">
+            <RasterIcon name="reference" />
+          </span>
+          <span className="icon-label">Ref</span>
         </button>
         <IconButton label="Undo" onClick={() => onDispatch({ type: "undo" })} disabled={runtime.moveHistory.length === 0}>
           <RasterIcon name="undo" />
@@ -454,13 +456,22 @@ function ReferenceDialog({ onClose }: { onClose: () => void }) {
         </button>
         <h2>Reference</h2>
       </header>
-      <div className="magnifier-stage">
-        <div className="magnifier-lens" aria-hidden="true">
-          <img src={assets.puzzleGrove.src} alt="" />
+      <div className="reference-zoom">
+        <div className="reference-zoom__source">
+          <span className="reference-zoom__crop">
+            <img className="reference-screen__image" src={assets.puzzleGrove.src} alt={`Reference image: ${assets.puzzleGrove.alt}`} />
+          </span>
+          <img className="reference-zoom__frame" src={assets.referenceZoomFrame} alt="" aria-hidden="true" />
         </div>
-        <div className="magnifier-handle" aria-hidden="true" />
+        <div className="magnifier-stage" aria-hidden="true">
+          <div className="magnifier-lens">
+            <span className="magnifier-lens__crop">
+              <img className="magnifier-lens__image" src={assets.puzzleGrove.src} alt="" />
+            </span>
+            <img className="magnifier-lens__frame" src={assets.referenceZoomFrame} alt="" />
+          </div>
+        </div>
       </div>
-      <img className="reference-screen__image" src={assets.puzzleGrove.src} alt={`Reference image: ${assets.puzzleGrove.alt}`} />
     </div>
   );
 }

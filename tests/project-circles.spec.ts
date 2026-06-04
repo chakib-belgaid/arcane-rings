@@ -32,6 +32,30 @@ test("launches the Enchanted Grove menu and starts the seeded puzzle", async ({ 
   await expect(referenceDialog).toBeVisible();
   await expect(referenceDialog.getByRole("img", { name: /reference image/i })).toBeVisible();
   await expect(referenceDialog.locator("button[aria-label='Close'] img.raster-icon")).toHaveCount(1);
+  await expect(referenceDialog.locator(".magnifier-handle")).toHaveCount(0);
+  await expect(referenceDialog.locator(".magnifier-stage")).toHaveCSS("animation-iteration-count", "1");
+  await page.waitForTimeout(1200);
+  const settledTransform = await referenceDialog.locator(".magnifier-stage").evaluate((element) => {
+    return getComputedStyle(element).transform;
+  });
+  await page.waitForTimeout(300);
+  await expect
+    .poll(() => referenceDialog.locator(".magnifier-stage").evaluate((element) => getComputedStyle(element).transform))
+    .toBe(settledTransform);
+  const lensBox = await referenceDialog.locator(".magnifier-lens").boundingBox();
+  const lensCropBox = await referenceDialog.locator(".magnifier-lens__crop").boundingBox();
+  const lensImageBox = await referenceDialog.locator(".magnifier-lens__image").boundingBox();
+  const lensFrameBox = await referenceDialog.locator(".magnifier-lens__frame").boundingBox();
+  expect(lensBox).not.toBeNull();
+  expect(lensCropBox).not.toBeNull();
+  expect(lensImageBox).not.toBeNull();
+  expect(lensFrameBox).not.toBeNull();
+  expect(Math.abs(lensFrameBox!.x - lensBox!.x)).toBeLessThan(1);
+  expect(Math.abs(lensFrameBox!.y - lensBox!.y)).toBeLessThan(1);
+  expect(Math.abs(lensFrameBox!.width - lensBox!.width)).toBeLessThan(1);
+  expect(Math.abs(lensFrameBox!.height - lensBox!.height)).toBeLessThan(1);
+  expect(lensCropBox!.width).toBeLessThan(lensBox!.width * 0.78);
+  expect(lensImageBox!.width).toBeGreaterThan(lensCropBox!.width * 1.3);
   const dialogBox = await referenceDialog.boundingBox();
   expect(dialogBox).not.toBeNull();
   expect(dialogBox!.width).toBeGreaterThan(referenceButton!.width * 2);
