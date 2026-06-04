@@ -40,5 +40,5 @@ export const demoLevel: Level = {
     graphDepth: 4
   },
   showReferenceThumbnail: true,
-  showCouplingHints: true
+  showCouplingHints: false
 };

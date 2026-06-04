@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { demoLevel } from "../levels/demoLevel";
-import { createRuntimeState, getCurrentOffsets, getStars, reducer } from "./gameState";
+import { createRuntimeState, getCurrentOffsets, getFirstCouplingEdge, getStars, reducer } from "./gameState";
 
 describe("game reducer", () => {
   test("keeps preview rotation transient until commit", () => {
@@ -45,5 +45,17 @@ describe("game reducer", () => {
     expect(state.isSolved).toBe(true);
     expect(state.solvedAt).toBe(8_000);
     expect(getStars(demoLevel, state)).toBe(3);
+  });
+
+  test("hint reveals one stable coupling instead of incrementing solution layers", () => {
+    const state = createRuntimeState(demoLevel, 1_000);
+    const hinted = reducer(state, demoLevel, { type: "requestHint" });
+    const repeated = reducer(hinted, demoLevel, { type: "requestHint" });
+
+    expect(hinted.hintedCoupling).toEqual(getFirstCouplingEdge(demoLevel));
+    expect(hinted.hintCount).toBe(1);
+    expect(hinted.highlightedRing).toBe(hinted.hintedCoupling?.visualRing);
+    expect(repeated.hintedCoupling).toEqual(hinted.hintedCoupling);
+    expect(repeated.hintCount).toBe(1);
   });
 });

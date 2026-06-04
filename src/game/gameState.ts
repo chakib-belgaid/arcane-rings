@@ -1,5 +1,5 @@
 import { cyclicDistance, matVecMod, modNorm } from "../math/mod";
-import type { GameAction, Level, RuntimeState } from "./types";
+import type { CouplingEdge, GameAction, Level, RuntimeState } from "./types";
 
 export function createRuntimeState(level: Level, now = Date.now()): RuntimeState {
   return {
@@ -12,7 +12,8 @@ export function createRuntimeState(level: Level, now = Date.now()): RuntimeState
     startedAt: now,
     solvedAt: null,
     hintCount: 0,
-    highlightedRing: null
+    highlightedRing: null,
+    hintedCoupling: null
   };
 }
 
@@ -41,6 +42,20 @@ export function getAffectedRings(level: Level, controlRing: number | null): numb
     .map((row, index) => ({ index, factor: row[controlRing] ?? 0 }))
     .filter(({ factor }) => modNorm(factor, level.q) !== 0)
     .map(({ index }) => index);
+}
+
+export function getFirstCouplingEdge(level: Level): CouplingEdge | null {
+  for (let visualRing = 0; visualRing < level.matrix.length; visualRing += 1) {
+    const row = level.matrix[visualRing];
+    for (let controlRing = 0; controlRing < row.length; controlRing += 1) {
+      const factor = modNorm(row[controlRing] ?? 0, level.q);
+      if (controlRing !== visualRing && factor !== 0) {
+        return { controlRing, visualRing, factor };
+      }
+    }
+  }
+
+  return null;
 }
 
 export function isSolved(level: Level, state: RuntimeState): boolean {
@@ -132,15 +147,13 @@ export function reducer(state: RuntimeState, level: Level, action: GameAction): 
     }
 
     case "requestHint": {
-      const targetRing = level.solution.findIndex((solutionTicks, index) => {
-        const current = state.accumulatedMoves[index] ?? 0;
-        return modNorm(solutionTicks - current, level.q) !== 0;
-      });
+      const hintedCoupling = state.hintedCoupling ?? getFirstCouplingEdge(level);
 
       return {
         ...state,
-        hintCount: state.hintCount + 1,
-        highlightedRing: targetRing === -1 ? null : targetRing
+        hintCount: state.hintedCoupling ? state.hintCount : state.hintCount + 1,
+        highlightedRing: hintedCoupling?.visualRing ?? null,
+        hintedCoupling
       };
     }
 

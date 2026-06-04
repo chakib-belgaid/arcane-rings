@@ -2,7 +2,7 @@ import { useEffect, useReducer, useState } from "react";
 import { assets } from "../assets";
 import { demoLevel } from "../levels/demoLevel";
 import { getStars, reducer as gameReducer } from "../game/gameState";
-import type { GameAction, RuntimeState } from "../game/types";
+import type { CouplingEdge, GameAction, RuntimeState } from "../game/types";
 import { createRuntimeState } from "../game/gameState";
 import {
   createDefaultSaveData,
@@ -27,7 +27,7 @@ import {
 } from "./icons";
 
 type Screen = "menu" | "play";
-type Overlay = "settings" | "coupling" | "win" | "levels" | "daily" | "collection" | null;
+type Overlay = "settings" | "coupling" | "reference" | "hint" | "win" | "levels" | "daily" | "collection" | null;
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("menu");
@@ -79,6 +79,7 @@ export default function App() {
       }
       if (event.key.toLowerCase() === "h") {
         dispatch({ type: "requestHint" });
+        setOverlay("hint");
       }
       if (runtime.selectedRing !== null && event.key === "ArrowRight") {
         dispatch({ type: "commitRotation", controlRing: runtime.selectedRing, deltaTicks: 1 });
@@ -158,7 +159,6 @@ export default function App() {
             setOverlay(null);
           }}
           onOpenOverlay={setOverlay}
-          onToggleReference={() => setShowReference((current) => !current)}
         />
       )}
 
@@ -171,6 +171,8 @@ export default function App() {
         />
       )}
       {overlay === "coupling" && <CouplingDrawer onClose={() => setOverlay(null)} />}
+      {overlay === "reference" && <ReferenceDialog onClose={() => setOverlay(null)} />}
+      {overlay === "hint" && <HintDialog edge={runtime.hintedCoupling} onClose={() => setOverlay(null)} />}
       {overlay === "levels" && <ShellDialog title="Levels" icon={<BookIcon />} onClose={() => setOverlay(null)} primaryAction={startLevel} primaryLabel="Begin Hard Grove" />}
       {overlay === "daily" && <ShellDialog title="Daily" icon={<CalendarIcon />} onClose={() => setOverlay(null)} primaryAction={startLevel} primaryLabel="Play Daily" />}
       {overlay === "collection" && <CollectionDialog saveData={saveData} onClose={() => setOverlay(null)} onPlay={startLevel} />}
@@ -250,8 +252,7 @@ function PuzzleScreen({
   settings,
   onDispatch,
   onMenu,
-  onOpenOverlay,
-  onToggleReference
+  onOpenOverlay
 }: {
   runtime: RuntimeState;
   overlay: Overlay;
@@ -260,12 +261,13 @@ function PuzzleScreen({
   onDispatch: (action: GameAction) => void;
   onMenu: () => void;
   onOpenOverlay: (overlay: Overlay) => void;
-  onToggleReference: () => void;
 }) {
+  const canShowCouplingMap = demoLevel.difficultyName === "easy" && demoLevel.showCouplingHints;
+
   return (
     <main className="game-screen">
       <div className="grove-vignette" aria-hidden="true" />
-      <header className="hud-top">
+      <header className={["hud-top", canShowCouplingMap ? "" : "is-no-map"].join(" ")}>
         <div className="moves-plaque">
           <span>Moves</span>
           <strong>{runtime.totalTickMoves}</strong>
@@ -274,12 +276,21 @@ function PuzzleScreen({
         <IconButton label="Undo" onClick={() => onDispatch({ type: "undo" })} disabled={runtime.moveHistory.length === 0}>
           <UndoIcon />
         </IconButton>
-        <IconButton label="Hint" badge={runtime.hintCount > 0 ? String(runtime.hintCount) : undefined} onClick={() => onDispatch({ type: "requestHint" })}>
+        <IconButton
+          label="Hint"
+          badge={runtime.hintedCoupling ? "1" : undefined}
+          onClick={() => {
+            onDispatch({ type: "requestHint" });
+            onOpenOverlay("hint");
+          }}
+        >
           <HintIcon />
         </IconButton>
-        <IconButton label="Map" onClick={() => onOpenOverlay("coupling")}>
-          <MapIcon />
-        </IconButton>
+        {canShowCouplingMap ? (
+          <IconButton label="Map" onClick={() => onOpenOverlay("coupling")}>
+            <MapIcon />
+          </IconButton>
+        ) : null}
         <button className="difficulty-badge" onClick={() => onOpenOverlay("levels")}>
           <span>Hard</span>
           <strong aria-label="Three stars">***</strong>
@@ -296,16 +307,20 @@ function PuzzleScreen({
         />
       </section>
 
-      <button className={["reference-medallion", showReference ? "is-open" : ""].join(" ")} onClick={onToggleReference} aria-label="Toggle reference thumbnail">
-        <img src={assets.referenceMedallion} alt="" aria-hidden="true" />
-        {showReference ? <img className="reference-image" src={assets.puzzleGrove.src} alt={assets.puzzleGrove.alt} /> : <ImageIcon />}
-        <span>Ref</span>
+      <button className={["reference-medallion", showReference ? "is-open" : ""].join(" ")} onClick={() => onOpenOverlay("reference")} aria-label="Open reference image">
+        <span className="reference-art" aria-hidden="true">
+          <img className="reference-frame" src={assets.referenceMedallion} alt="" />
+          {showReference ? <img className="reference-image" src={assets.puzzleGrove.src} alt="" /> : <ImageIcon />}
+        </span>
+        <span className="reference-label">Ref</span>
       </button>
 
-      <button className="coupling-medallion" onClick={() => onOpenOverlay("coupling")} aria-label="Open coupling map">
-        <MapIcon />
-        <span>Coupling</span>
-      </button>
+      {canShowCouplingMap ? (
+        <button className="coupling-medallion" onClick={() => onOpenOverlay("coupling")} aria-label="Open coupling map">
+          <MapIcon />
+          <span>Coupling</span>
+        </button>
+      ) : null}
 
       <button className="pause-button" onClick={() => onOpenOverlay("settings")} aria-label="Open settings">
         <SettingsIcon />
@@ -384,14 +399,7 @@ function SettingsDialog({
 }
 
 function CouplingDrawer({ onClose }: { onClose: () => void }) {
-  const edges = demoLevel.matrix.flatMap((row, visualRing) =>
-    row.flatMap((factor, controlRing) => {
-      if (controlRing === visualRing || factor === 0) {
-        return [];
-      }
-      return [{ controlRing, visualRing, factor }];
-    })
-  );
+  const edges = getCouplingEdges();
 
   return (
     <ModalFrame title="Coupling" onClose={onClose} compact>
@@ -407,6 +415,34 @@ function CouplingDrawer({ onClose }: { onClose: () => void }) {
       </div>
       <button className="primary-button" onClick={onClose}>
         Close Map
+      </button>
+    </ModalFrame>
+  );
+}
+
+function ReferenceDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <ModalFrame title="Reference" onClose={onClose} wide>
+      <img className="reference-window-image" src={assets.puzzleGrove.src} alt={`Reference image: ${assets.puzzleGrove.alt}`} />
+    </ModalFrame>
+  );
+}
+
+function HintDialog({ edge, onClose }: { edge: CouplingEdge | null; onClose: () => void }) {
+  return (
+    <ModalFrame title="Hint" onClose={onClose} compact>
+      {edge ? (
+        <div className="hint-coupling" data-testid="hint-coupling">
+          <span>Ring {edge.controlRing + 1}</span>
+          <MapIcon />
+          <span>Ring {edge.visualRing + 1}</span>
+          <strong>x{edge.factor}</strong>
+        </div>
+      ) : (
+        <p className="hint-empty">No coupling is hidden in this level.</p>
+      )}
+      <button className="primary-button" onClick={onClose}>
+        Got it
       </button>
     </ModalFrame>
   );
@@ -510,17 +546,19 @@ function Score({ label, value }: { label: string; value: string }) {
 function ModalFrame({
   title,
   compact,
+  wide,
   onClose,
   children
 }: {
   title: string;
   compact?: boolean;
+  wide?: boolean;
   onClose: () => void;
   children: React.ReactNode;
 }) {
   return (
     <div className="modal-backdrop" role="presentation">
-      <section className={["modal-panel", compact ? "is-compact" : ""].join(" ")} role="dialog" aria-modal="true" aria-labelledby={`dialog-${title}`}>
+      <section className={["modal-panel", compact ? "is-compact" : "", wide ? "is-wide" : ""].join(" ")} role="dialog" aria-modal="true" aria-labelledby={`dialog-${title}`}>
         <header className="modal-header">
           <h2 id={`dialog-${title}`}>{title}</h2>
           <button className="close-button" aria-label="Close" onClick={onClose}>
@@ -530,6 +568,17 @@ function ModalFrame({
         {children}
       </section>
     </div>
+  );
+}
+
+function getCouplingEdges(): CouplingEdge[] {
+  return demoLevel.matrix.flatMap((row, visualRing) =>
+    row.flatMap((factor, controlRing) => {
+      if (controlRing === visualRing || factor === 0) {
+        return [];
+      }
+      return [{ controlRing, visualRing, factor }];
+    })
   );
 }
 

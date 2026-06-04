@@ -40,6 +40,12 @@ export type PlayerMove = {
   createdAt: number;
 };
 
+export type CouplingEdge = {
+  controlRing: number;
+  visualRing: number;
+  factor: number;
+};
+
 export type RuntimeState = {
   accumulatedMoves: number[];
   moveHistory: PlayerMove[];
@@ -51,6 +57,7 @@ export type RuntimeState = {
   solvedAt: number | null;
   hintCount: number;
   highlightedRing: number | null;
+  hintedCoupling: CouplingEdge | null;
 };
 
 export type GameAction =
