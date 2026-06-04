@@ -8,5 +8,6 @@ export const assets = {
   mainLoopBackground: "/assets/main-loop-background.png",
   uiSkinTexture: "/assets/ui-skin-texture.png",
   referenceMedallion: "/assets/reference-medallion.png",
+  referenceZoomFrame: "/assets/reference-zoom-frame.png",
   groveTexture: "/assets/grove-texture.png"
 } as const;
