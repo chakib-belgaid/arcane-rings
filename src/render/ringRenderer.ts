@@ -1,280 +1,166 @@
-export type PuzzleRingRenderParams = {
-  image: CanvasImageSource;
-  width: number;
-  height: number;
-  ringRadii: number[];
+import type { Level } from "../game/types";
+
+export type RingRenderState = {
   offsets: number[];
-  q: number;
   selectedRing: number | null;
   affectedRings: number[];
-  previewTicks: number;
+  highlightedRing: number | null;
+  solved: boolean;
+  highContrast: boolean;
 };
 
-type SourceDimensions = {
-  width: number;
-  height: number;
+export type PuzzleGeometry = {
+  centerX: number;
+  centerY: number;
+  radius: number;
 };
 
-const DIMMED_RING_OVERLAY = "rgba(4, 8, 11, 0.34)";
+export function drawPuzzle(
+  canvas: HTMLCanvasElement,
+  image: HTMLImageElement,
+  level: Level,
+  state: RingRenderState
+): PuzzleGeometry {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Canvas 2D context is unavailable.");
+  }
 
-const AFFECTED_RING_GLOW = {
-  fill: "rgba(224, 173, 86, 0.14)",
-  lineWidth: 4.6,
-  shadowBlur: 17,
-  shadowColor: "rgba(247, 192, 94, 0.78)",
-  stroke: "rgba(247, 192, 94, 0.74)",
-};
+  const width = canvas.width;
+  const height = canvas.height;
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const radius = Math.min(width, height) * 0.455;
 
-const SELECTED_RING_GLOW = {
-  fill: "rgba(224, 173, 86, 0.2)",
-  lineWidth: 5.8,
-  shadowBlur: 24,
-  shadowColor: "rgba(247, 192, 94, 0.78)",
-  stroke: "rgba(247, 192, 94, 0.98)",
-  strokeHot: "rgba(255, 238, 186, 0.9)",
-};
+  ctx.clearRect(0, 0, width, height);
+  drawBackdrop(ctx, centerX, centerY, radius, state.solved);
 
-function sourceDimensions(source: CanvasImageSource): SourceDimensions {
-  const candidate = source as {
-    naturalWidth?: number;
-    naturalHeight?: number;
-    videoWidth?: number;
-    videoHeight?: number;
-    width?: number;
-    height?: number;
-  };
+  let previousRadius = 0;
+  level.ringRadii.forEach((ratio, index) => {
+    const outer = radius * ratio;
+    const inner = radius * previousRadius;
+    const angle = (state.offsets[index] / level.q) * Math.PI * 2;
 
-  return {
-    width: candidate.naturalWidth ?? candidate.videoWidth ?? Number(candidate.width),
-    height: candidate.naturalHeight ?? candidate.videoHeight ?? Number(candidate.height),
-  };
+    ctx.save();
+    annulusPath(ctx, centerX, centerY, inner, outer);
+    ctx.clip("evenodd");
+    ctx.translate(centerX, centerY);
+    ctx.rotate(angle);
+    ctx.drawImage(image, -radius, -radius, radius * 2, radius * 2);
+    ctx.restore();
+
+    previousRadius = ratio;
+  });
+
+  drawRingBorders(ctx, level, centerX, centerY, radius, state);
+  drawCardinalVines(ctx, centerX, centerY, radius, state.solved);
+
+  return { centerX, centerY, radius };
 }
 
-function addAnnulusPath(
-  context: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  innerRadius: number,
-  outerRadius: number,
-): void {
-  context.beginPath();
-  context.arc(cx, cy, outerRadius, 0, Math.PI * 2, false);
-  if (innerRadius > 0) {
-    context.arc(cx, cy, innerRadius, Math.PI * 2, 0, true);
-  }
+function drawBackdrop(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  radius: number,
+  solved: boolean
+) {
+  const glow = ctx.createRadialGradient(centerX, centerY, radius * 0.2, centerX, centerY, radius * 1.32);
+  glow.addColorStop(0, solved ? "rgba(244, 214, 131, 0.22)" : "rgba(111, 188, 184, 0.12)");
+  glow.addColorStop(0.72, "rgba(6, 22, 17, 0.3)");
+  glow.addColorStop(1, "rgba(1, 8, 7, 0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius * 1.35, 0, Math.PI * 2);
+  ctx.fill();
 }
 
-function strokeAnnulus(
-  context: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  innerRadius: number,
-  outerRadius: number,
-  color: string,
-  lineWidth: number,
-): void {
-  context.save();
-  context.strokeStyle = color;
-  context.lineWidth = lineWidth;
-  context.beginPath();
-  context.arc(cx, cy, outerRadius, 0, Math.PI * 2);
-  context.stroke();
-  if (innerRadius > 0) {
-    context.beginPath();
-    context.arc(cx, cy, innerRadius, 0, Math.PI * 2);
-    context.stroke();
-  }
-  context.restore();
+function drawRingBorders(
+  ctx: CanvasRenderingContext2D,
+  level: Level,
+  centerX: number,
+  centerY: number,
+  radius: number,
+  state: RingRenderState
+) {
+  ctx.save();
+  ctx.lineCap = "round";
+
+  level.ringRadii.forEach((ratio, index) => {
+    const ringRadius = radius * ratio;
+    const isSelected = state.selectedRing === index;
+    const isAffected = state.affectedRings.includes(index);
+    const isHinted = state.highlightedRing === index;
+
+    ctx.shadowBlur = isSelected || isHinted ? 22 : isAffected ? 14 : 0;
+    ctx.shadowColor = isSelected || isHinted ? "rgba(244, 214, 131, 0.9)" : "rgba(135, 217, 191, 0.55)";
+    ctx.strokeStyle = isSelected
+      ? "#f4d683"
+      : isHinted
+        ? "#fff2b4"
+        : isAffected
+          ? "#8bd7bf"
+          : state.highContrast
+            ? "#f7ead2"
+            : "rgba(224, 198, 132, 0.78)";
+    ctx.lineWidth = isSelected || isHinted ? 5 : isAffected ? 3.5 : 2;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = "rgba(244, 214, 131, 0.55)";
+  ctx.strokeStyle = state.solved ? "#ffe8a3" : "rgba(244, 214, 131, 0.78)";
+  ctx.lineWidth = state.solved ? 7 : 3;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
-function glowAnnulus(
-  context: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  innerRadius: number,
-  outerRadius: number,
-  strokeColor: string,
-  shadowColor: string,
-  lineWidth: number,
-  blur: number,
-): void {
-  context.save();
-  context.shadowColor = shadowColor;
-  context.shadowBlur = blur;
-  context.shadowOffsetX = 0;
-  context.shadowOffsetY = 0;
-  context.strokeStyle = strokeColor;
-  context.lineWidth = lineWidth;
-  context.beginPath();
-  context.arc(cx, cy, outerRadius, 0, Math.PI * 2);
-  context.stroke();
-  if (innerRadius > 0) {
-    context.beginPath();
-    context.arc(cx, cy, innerRadius, 0, Math.PI * 2);
-    context.stroke();
+function drawCardinalVines(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  radius: number,
+  solved: boolean
+) {
+  ctx.save();
+  ctx.strokeStyle = solved ? "rgba(255, 232, 163, 0.76)" : "rgba(174, 216, 157, 0.5)";
+  ctx.fillStyle = solved ? "rgba(255, 232, 163, 0.9)" : "rgba(174, 216, 157, 0.72)";
+  ctx.lineWidth = 2;
+
+  for (let index = 0; index < 4; index += 1) {
+    const angle = index * (Math.PI / 2) - Math.PI / 2;
+    const inner = radius * 1.01;
+    const outer = radius * 1.09;
+    const x1 = centerX + Math.cos(angle) * inner;
+    const y1 = centerY + Math.sin(angle) * inner;
+    const x2 = centerX + Math.cos(angle) * outer;
+    const y2 = centerY + Math.sin(angle) * outer;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(x2, y2, 4, 8, angle, 0, Math.PI * 2);
+    ctx.fill();
   }
-  context.restore();
+
+  ctx.restore();
 }
 
-function fillAnnulus(
-  context: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-  innerRadius: number,
-  outerRadius: number,
-  color: string,
-): void {
-  context.save();
-  addAnnulusPath(context, cx, cy, innerRadius, outerRadius);
-  context.fillStyle = color;
-  context.fill();
-  context.restore();
-}
-
-export function drawPuzzleRings(
-  context: CanvasRenderingContext2D,
-  params: PuzzleRingRenderParams,
-): void {
-  const { image, width, height, ringRadii, offsets, q, selectedRing, affectedRings, previewTicks } =
-    params;
-  const cx = width / 2;
-  const cy = height / 2;
-  const radius = ringRadii[ringRadii.length - 1] ?? Math.min(width, height) / 2;
-  const dimensions = sourceDimensions(image);
-  const cropSide = Math.min(dimensions.width, dimensions.height);
-  const cropX = (dimensions.width - cropSide) / 2;
-  const cropY = (dimensions.height - cropSide) / 2;
-
-  context.clearRect(0, 0, width, height);
-  context.fillStyle = "#081018";
-  context.fillRect(0, 0, width, height);
-
-  for (let ring = 0; ring < ringRadii.length - 1; ring += 1) {
-    const innerRadius = ringRadii[ring];
-    const outerRadius = ringRadii[ring + 1];
-    const rotation = ((offsets[ring] ?? 0) * Math.PI * 2) / q;
-
-    context.save();
-    addAnnulusPath(context, cx, cy, innerRadius, outerRadius);
-    context.clip();
-    context.translate(cx, cy);
-    context.rotate(rotation);
-    context.drawImage(image, cropX, cropY, cropSide, cropSide, -radius, -radius, radius * 2, radius * 2);
-    context.restore();
-  }
-
-  if (selectedRing !== null) {
-    const highlightedRings = new Set([selectedRing, ...affectedRings]);
-    for (let ring = 0; ring < ringRadii.length - 1; ring += 1) {
-      if (highlightedRings.has(ring)) {
-        continue;
-      }
-
-      fillAnnulus(context, cx, cy, ringRadii[ring], ringRadii[ring + 1], DIMMED_RING_OVERLAY);
-    }
-  }
-
-  for (let ring = 0; ring < ringRadii.length - 1; ring += 1) {
-    strokeAnnulus(
-      context,
-      cx,
-      cy,
-      ringRadii[ring],
-      ringRadii[ring + 1],
-      "rgba(181, 213, 232, 0.46)",
-      1.4,
-    );
-  }
-
-  for (const ring of affectedRings) {
-    if (ring === selectedRing || ring < 0 || ring >= ringRadii.length - 1) {
-      continue;
-    }
-    glowAnnulus(
-      context,
-      cx,
-      cy,
-      ringRadii[ring],
-      ringRadii[ring + 1],
-      AFFECTED_RING_GLOW.stroke,
-      AFFECTED_RING_GLOW.shadowColor,
-      previewTicks === 0 ? 3.4 : AFFECTED_RING_GLOW.lineWidth,
-      previewTicks === 0 ? 13 : AFFECTED_RING_GLOW.shadowBlur,
-    );
-    fillAnnulus(
-      context,
-      cx,
-      cy,
-      ringRadii[ring],
-      ringRadii[ring + 1],
-      AFFECTED_RING_GLOW.fill,
-    );
-    strokeAnnulus(
-      context,
-      cx,
-      cy,
-      ringRadii[ring],
-      ringRadii[ring + 1],
-      AFFECTED_RING_GLOW.stroke,
-      previewTicks === 0 ? 1.9 : 2.6,
-    );
-  }
-
-  if (selectedRing !== null && selectedRing >= 0 && selectedRing < ringRadii.length - 1) {
-    glowAnnulus(
-      context,
-      cx,
-      cy,
-      ringRadii[selectedRing],
-      ringRadii[selectedRing + 1],
-      SELECTED_RING_GLOW.stroke,
-      SELECTED_RING_GLOW.shadowColor,
-      SELECTED_RING_GLOW.lineWidth,
-      SELECTED_RING_GLOW.shadowBlur,
-    );
-    fillAnnulus(
-      context,
-      cx,
-      cy,
-      ringRadii[selectedRing],
-      ringRadii[selectedRing + 1],
-      SELECTED_RING_GLOW.fill,
-    );
-    strokeAnnulus(
-      context,
-      cx,
-      cy,
-      ringRadii[selectedRing],
-      ringRadii[selectedRing + 1],
-      SELECTED_RING_GLOW.stroke,
-      3.4,
-    );
-    strokeAnnulus(
-      context,
-      cx,
-      cy,
-      ringRadii[selectedRing],
-      ringRadii[selectedRing + 1],
-      SELECTED_RING_GLOW.strokeHot,
-      1.2,
-    );
-  }
-
-  if (previewTicks !== 0 && selectedRing !== null) {
-    const previewRingRadius = (ringRadii[selectedRing] + ringRadii[selectedRing + 1]) / 2;
-    const arcLength = Math.min(Math.abs(previewTicks) / q, 0.5) * Math.PI * 2;
-    const startAngle = previewTicks > 0 ? -Math.PI / 2 : -Math.PI / 2 - arcLength;
-    const endAngle = previewTicks > 0 ? startAngle + arcLength : -Math.PI / 2;
-
-    context.save();
-    context.strokeStyle = "rgba(247, 192, 94, 0.95)";
-    context.shadowBlur = 12;
-    context.shadowColor = SELECTED_RING_GLOW.shadowColor;
-    context.lineWidth = 5;
-    context.lineCap = "round";
-    context.beginPath();
-    context.arc(cx, cy, previewRingRadius, startAngle, endAngle);
-    context.stroke();
-    context.restore();
+function annulusPath(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  inner: number,
+  outer: number
+) {
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, outer, 0, Math.PI * 2);
+  if (inner > 0) {
+    ctx.arc(centerX, centerY, inner, Math.PI * 2, 0, true);
   }
 }

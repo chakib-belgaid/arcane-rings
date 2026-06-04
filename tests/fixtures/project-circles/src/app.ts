@@ -147,7 +147,6 @@ function renderGame() {
         ></canvas>
       </section>
       <nav class="hud" data-testid="hud" aria-label="Puzzle status">
-        <span data-testid="move-count">${state.totalTickMoves}</span>
         <button type="button" data-action="undo" aria-label="Undo">Undo</button>
         <button type="button" data-action="menu" aria-label="Menu">Menu</button>
       </nav>

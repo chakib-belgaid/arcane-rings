@@ -29,10 +29,6 @@ export function ProjectCirclesApp() {
 
         <div className="top-hud" aria-label="Puzzle status">
           <div className="hud-chip">
-            <span>Moves</span>
-            <strong>{runtimeState.totalTickMoves}</strong>
-          </div>
-          <div className="hud-chip">
             <span>Track</span>
             <strong>{level.difficultyName}</strong>
           </div>

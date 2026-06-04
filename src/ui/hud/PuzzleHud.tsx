@@ -5,7 +5,6 @@ import { PuzzleLevelFixture } from "../types";
 
 type PuzzleHudProps = {
   level: PuzzleLevelFixture;
-  moveCount: number;
   elapsedTime: string;
   onUndo: () => void;
   onHint: () => void;
@@ -17,7 +16,6 @@ type PuzzleHudProps = {
 
 export function PuzzleHud({
   level,
-  moveCount,
   elapsedTime,
   onUndo,
   onHint,
@@ -28,10 +26,6 @@ export function PuzzleHud({
 }: PuzzleHudProps) {
   return (
     <aside className="hud hud--compact" data-testid="puzzle-hud" aria-label="Puzzle controls">
-      <div className="hud-chip hud-chip--moves">
-        <span>Moves</span>
-        <strong>{moveCount}</strong>
-      </div>
       <div className="hud-chip hud-chip--time">
         <span>Time</span>
         <strong>{elapsedTime}</strong>
