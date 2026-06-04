@@ -1,5 +1,5 @@
 import { RotateCcw, Trash2, Volume2, Waves } from "lucide-react";
-import { useId, useState } from "react";
+import { type CSSProperties, useId, useState } from "react";
 
 import { IconButton } from "../components/IconButton";
 import { ModalShell } from "../components/ModalShell";
@@ -16,6 +16,7 @@ export type AppSettings = {
   reducedMotion: boolean;
   soundEffects: boolean;
   music: boolean;
+  volume: number;
   haptics: boolean;
   referenceDefault: boolean;
   highContrastBorders: boolean;
@@ -26,11 +27,14 @@ export const defaultAppSettings: AppSettings = {
   reducedMotion: false,
   soundEffects: true,
   music: true,
+  volume: 1,
   haptics: true,
   referenceDefault: true,
   highContrastBorders: false,
   colorblindCoupling: true,
 };
+
+type BooleanSettingKey = Exclude<keyof AppSettings, "volume">;
 
 export function SettingsOverlay({
   settings,
@@ -43,9 +47,18 @@ export function SettingsOverlay({
   const [status, setStatus] = useState("");
   const [confirmReset, setConfirmReset] = useState(false);
 
-  const setBoolean = (key: keyof typeof settings) => (value: boolean) => {
+  const volumePercent = Math.round(settings.volume * 100);
+
+  const setBoolean = (key: BooleanSettingKey) => (value: boolean) => {
     onSettingsChange({ ...settings, [key]: value });
     setConfirmReset(false);
+  };
+
+  const setVolume = (value: number) => {
+    const volume = Math.min(1, Math.max(0, value));
+    onSettingsChange({ ...settings, volume });
+    setConfirmReset(false);
+    setStatus(`Volume ${Math.round(volume * 100)}%`);
   };
 
   const previewSound = () => {
@@ -82,6 +95,30 @@ export function SettingsOverlay({
   return (
     <ModalShell title="Settings" closeLabel="Close settings" onClose={onClose}>
       <div className="settings-grid" data-overlay-scope={variant}>
+        <div
+          className="volume-row"
+          style={{ "--volume-percent": `${volumePercent}%` } as CSSProperties}
+        >
+          <div className="volume-row__header">
+            <label htmlFor={`${id}-volume`}>Volume</label>
+            <span className="volume-row__value">{volumePercent}%</span>
+          </div>
+          <div className="volume-control">
+            <span className="volume-control__rail" aria-hidden="true">
+              <span className="volume-control__fill" />
+            </span>
+            <input
+              id={`${id}-volume`}
+              className="volume-control__input"
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={volumePercent}
+              onChange={(event) => setVolume(event.currentTarget.valueAsNumber / 100)}
+            />
+          </div>
+        </div>
         <Toggle
           id={`${id}-motion`}
           label="Reduced motion"

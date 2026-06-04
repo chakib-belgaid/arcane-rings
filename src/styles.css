@@ -1466,6 +1466,125 @@ svg {
   color: var(--text-muted);
 }
 
+.volume-row {
+  display: grid;
+  gap: 8px;
+  min-height: 92px;
+  padding: 10px 12px 12px;
+  border: 1px solid rgba(242, 216, 156, 0.28);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(180deg, rgba(15, 55, 48, 0.44), rgba(2, 8, 7, 0.36)),
+    var(--asset-ui-skin) center / 560px;
+}
+
+.volume-row:focus-within {
+  border-color: var(--pc-border-strong);
+  background:
+    linear-gradient(180deg, rgba(23, 74, 64, 0.66), rgba(2, 8, 7, 0.5)),
+    var(--asset-ui-skin) center / 560px;
+}
+
+.volume-row__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.volume-row__header label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.volume-row__value {
+  color: var(--metal-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+.volume-control {
+  position: relative;
+  height: 54px;
+  min-width: 0;
+}
+
+.volume-control__rail,
+.volume-control__fill {
+  position: absolute;
+  inset: 0;
+  background: url("/assets/ui/volume-rail.png") center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+.volume-control__rail {
+  filter:
+    drop-shadow(0 8px 16px rgba(0, 0, 0, 0.32))
+    drop-shadow(0 0 10px rgba(143, 201, 214, 0.14));
+}
+
+.volume-control__fill {
+  overflow: hidden;
+  opacity: 0.86;
+  filter: brightness(1.24) saturate(1.18);
+  clip-path: inset(0 calc(100% - var(--volume-percent)) 0 0);
+}
+
+.volume-control__input {
+  position: absolute;
+  inset: 0 24px;
+  width: calc(100% - 48px);
+  height: 54px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.volume-control__input:focus {
+  outline: none;
+}
+
+.volume-control__input:focus-visible {
+  outline: 2px solid rgba(242, 216, 156, 0.82);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+.volume-control__input::-webkit-slider-runnable-track {
+  height: 54px;
+  background: transparent;
+  border: 0;
+}
+
+.volume-control__input::-moz-range-track {
+  height: 54px;
+  background: transparent;
+  border: 0;
+}
+
+.volume-control__input::-webkit-slider-thumb {
+  width: 48px;
+  height: 48px;
+  margin-top: 3px;
+  appearance: none;
+  border: 0;
+  background: url("/assets/ui/volume-thumb.png") center / contain no-repeat;
+  filter:
+    drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4))
+    drop-shadow(0 0 8px rgba(143, 201, 214, 0.22));
+}
+
+.volume-control__input::-moz-range-thumb {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  background: url("/assets/ui/volume-thumb.png") center / contain no-repeat;
+  filter:
+    drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4))
+    drop-shadow(0 0 8px rgba(143, 201, 214, 0.22));
+}
+
 .toggle-row,
 .coupling-edge,
 .score-item,

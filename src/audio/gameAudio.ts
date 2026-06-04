@@ -12,6 +12,7 @@ export type SoundEffect =
 export type AudioSettings = {
   soundEffects: boolean;
   music: boolean;
+  volume?: number;
 };
 
 export type MusicTrack = "menu" | "gameplay";
@@ -28,6 +29,7 @@ const musicSources: Record<MusicTrack, string> = {
   gameplay: "/assets/audio/circles_02_emerald_rotation_gameplay_loop.wav"
 };
 export const musicVolume = 0.52;
+const defaultMasterVolume = 1;
 const clockworkStepMs = 38;
 const maxClockworkTicks = 8;
 
@@ -85,7 +87,7 @@ const soundEffects: Record<SoundEffect, SoundSpec> = {
 };
 
 export class GameAudioController {
-  private settings: AudioSettings = { soundEffects: true, music: true };
+  private settings: Required<AudioSettings> = { soundEffects: true, music: true, volume: defaultMasterVolume };
   private music: HTMLAudioElement | null = null;
   private musicTrack: MusicTrack = "menu";
   private unlocked = false;
@@ -109,7 +111,14 @@ export class GameAudioController {
   }
 
   setSettings(settings: AudioSettings) {
-    this.settings = settings;
+    this.settings = {
+      ...settings,
+      volume: normalizeVolume(settings.volume, this.settings.volume)
+    };
+
+    if (this.music) {
+      this.music.volume = musicVolume * this.settings.volume;
+    }
 
     if (!settings.music) {
       this.stopMusic();
@@ -213,7 +222,7 @@ export class GameAudioController {
 
     const audio = new Audio(spec.src);
     audio.preload = "auto";
-    audio.volume = spec.volume;
+    audio.volume = spec.volume * this.settings.volume;
     if (spec.pitchVariance) {
       const variance = spec.pitchVariance;
       audio.playbackRate = 1 + (Math.random() * 2 - 1) * variance + (options.playbackRateOffset ?? 0);
@@ -230,11 +239,19 @@ export class GameAudioController {
       this.music = new Audio(musicSources[track]);
       this.music.loop = true;
       this.music.preload = "auto";
-      this.music.volume = musicVolume;
+      this.music.volume = musicVolume * this.settings.volume;
     }
 
     return this.music;
   }
+}
+
+function normalizeVolume(volume: number | undefined, fallback: number) {
+  if (typeof volume !== "number" || !Number.isFinite(volume)) {
+    return fallback;
+  }
+
+  return Math.min(1, Math.max(0, volume));
 }
 
 function canUseAudio() {

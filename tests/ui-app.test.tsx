@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
@@ -152,6 +152,7 @@ describe("Arcane Rings menu and overlay UI", () => {
     expect(screen.getByTestId("puzzle-stage").getAttribute("data-input-gated")).toBe("true");
     expect(within(dialog).getByLabelText("Reduced motion")).toBeTruthy();
     expect(within(dialog).getByLabelText("Sound effects")).toBeTruthy();
+    expect((within(dialog).getByLabelText("Volume") as HTMLInputElement).value).toBe("100");
     expect(within(dialog).getByLabelText("High contrast ring borders")).toBeTruthy();
     expect(within(dialog).getByRole("button", { name: "Reset progress" })).toBeTruthy();
 
@@ -163,7 +164,12 @@ describe("Arcane Rings menu and overlay UI", () => {
 
     await user.click(within(dialog).getByRole("button", { name: "Restore defaults" }));
     expect((within(dialog).getByLabelText("Reduced motion") as HTMLInputElement).checked).toBe(false);
+    expect((within(dialog).getByLabelText("Volume") as HTMLInputElement).value).toBe("100");
     expect(within(dialog).getByRole("status").textContent).toContain("Defaults restored");
+
+    fireEvent.change(within(dialog).getByLabelText("Volume"), { target: { value: "70" } });
+    expect((within(dialog).getByLabelText("Volume") as HTMLInputElement).value).toBe("70");
+    expect(within(dialog).getByText("70%")).toBeTruthy();
 
     await user.click(within(dialog).getByLabelText("High contrast ring borders"));
     await user.click(within(dialog).getByRole("button", { name: "Close settings" }));
@@ -171,6 +177,7 @@ describe("Arcane Rings menu and overlay UI", () => {
 
     const reopened = screen.getByRole("dialog", { name: "Settings" });
     expect((within(reopened).getByLabelText("High contrast ring borders") as HTMLInputElement).checked).toBe(true);
+    expect((within(reopened).getByLabelText("Volume") as HTMLInputElement).value).toBe("70");
   });
 
   test("solution reference opens fullscreen and gates puzzle input", async () => {

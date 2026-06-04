@@ -22,10 +22,23 @@ function readStoredSettings(): AppSettings {
       return defaultAppSettings;
     }
 
-    return { ...defaultAppSettings, ...(JSON.parse(stored) as Partial<AppSettings>) };
+    const parsed = JSON.parse(stored) as Partial<AppSettings>;
+    return {
+      ...defaultAppSettings,
+      ...parsed,
+      volume: normalizeStoredVolume(parsed.volume),
+    };
   } catch {
     return defaultAppSettings;
   }
+}
+
+function normalizeStoredVolume(volume: unknown) {
+  if (typeof volume !== "number" || !Number.isFinite(volume)) {
+    return defaultAppSettings.volume;
+  }
+
+  return Math.min(1, Math.max(0, volume));
 }
 
 export function App() {
@@ -49,8 +62,9 @@ export function App() {
     gameAudio.setSettings({
       music: settings.music,
       soundEffects: settings.soundEffects,
+      volume: settings.volume,
     });
-  }, [settings.music, settings.soundEffects]);
+  }, [settings.music, settings.soundEffects, settings.volume]);
 
   useEffect(() => {
     gameAudio.setMusicTrack(screen === "puzzle" ? "gameplay" : "menu");

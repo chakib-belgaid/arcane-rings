@@ -128,4 +128,29 @@ describe("GameAudioController", () => {
 
     expect(instances.filter((instance) => instance.src.endsWith("sfx_puzzle_tick_01.wav"))).toHaveLength(0);
   });
+
+  test("scales music and sound effects with the master volume", () => {
+    const controller = new GameAudioController();
+    controller.setSettings({ music: true, soundEffects: true, volume: 0.5 });
+
+    controller.playSfx("uiSelect");
+
+    const music = instances.find((instance) => instance.src.endsWith("circles_01_moonlit_garden_menu_loop.wav"));
+    const sfx = instances.find((instance) => instance.src.endsWith("sfx_ui_select_01.wav"));
+
+    expect(music?.volume).toBeCloseTo(musicVolume * 0.5);
+    expect(sfx?.volume).toBeCloseTo(0.55 * 0.5);
+  });
+
+  test("updates active music volume when settings change", () => {
+    const controller = new GameAudioController();
+    controller.setSettings({ music: true, soundEffects: true, volume: 1 });
+
+    controller.playSfx("uiSelect");
+    const music = instances.find((instance) => instance.src.endsWith("circles_01_moonlit_garden_menu_loop.wav"));
+
+    controller.setSettings({ music: true, soundEffects: true, volume: 0.25 });
+
+    expect(music?.volume).toBeCloseTo(musicVolume * 0.25);
+  });
 });
