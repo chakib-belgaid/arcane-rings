@@ -383,10 +383,7 @@ svg {
   animation-delay: 470ms;
 }
 
-.row-icon,
-.icon-shell,
-.close-button,
-.pause-button {
+.row-icon {
   display: grid;
   place-items: center;
   color: var(--metal-bright);
@@ -422,6 +419,9 @@ svg {
 }
 
 .game-screen {
+  max-width: 430px;
+  margin: 0 auto;
+  border-inline: 1px solid rgba(242, 216, 156, 0.18);
   background:
     radial-gradient(circle at 50% 49%, rgba(2, 8, 7, 0.12) 0 28%, rgba(2, 8, 7, 0.34) 54%, rgba(2, 8, 7, 0.68) 100%),
     linear-gradient(180deg, rgba(2, 8, 7, 0.14), rgba(2, 8, 7, 0.56)),
@@ -458,61 +458,117 @@ svg {
   animation: grove-aura-turn 26s linear infinite;
 }
 
-.hud-top {
+.puzzle-status {
   position: absolute;
-  z-index: 4;
-  top: max(12px, env(safe-area-inset-top));
-  left: max(12px, env(safe-area-inset-left));
-  right: max(12px, env(safe-area-inset-right));
+  z-index: 5;
+  top: max(14px, env(safe-area-inset-top));
+  left: 50%;
   display: grid;
-  grid-template-columns: repeat(3, minmax(54px, 72px)) minmax(74px, 96px);
-  justify-content: center;
-  align-items: start;
-  gap: clamp(7px, 2vw, 15px);
-  pointer-events: none;
+  grid-template-columns: repeat(2, minmax(106px, 1fr));
+  gap: 10px;
+  width: min(calc(100% - 32px), 322px);
+  transform: translateX(-50%);
 }
 
-.hud-top.is-no-map {
-  grid-template-columns: repeat(2, minmax(54px, 72px)) minmax(74px, 96px);
-}
-
-.hud-top > * {
-  pointer-events: auto;
-}
-
-.difficulty-badge {
-  min-height: 72px;
-  padding: 10px 8px;
+.status-chip {
+  display: grid;
+  gap: 2px;
+  min-height: 52px;
+  padding: 8px 16px 9px;
+  color: var(--text-ivory);
   text-align: center;
-  border: 1px solid rgba(242, 216, 156, 0.72);
-  border-radius: var(--radius-md);
+  border: 1px solid rgba(242, 216, 156, 0.46);
+  border-radius: 999px;
   background:
-    radial-gradient(circle at 50% 0%, rgba(143, 201, 214, 0.16), transparent 58%),
-    var(--skin-panel) center / 380px;
+    radial-gradient(circle at 50% 0%, rgba(143, 201, 214, 0.16), transparent 56%),
+    linear-gradient(180deg, rgba(18, 62, 56, 0.78), rgba(3, 17, 14, 0.88)),
+    var(--asset-ui-skin) center / 420px;
   box-shadow:
-    inset 0 0 18px rgba(244, 214, 131, 0.13),
+    inset 0 0 16px rgba(244, 214, 131, 0.1),
     inset 0 0 0 1px rgba(255, 239, 188, 0.08),
-    0 10px 24px rgba(0, 0, 0, 0.3);
+    0 10px 28px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(10px);
 }
 
-.difficulty-badge span,
-.reference-medallion span,
-.coupling-medallion span,
-.icon-label {
+.status-chip--button {
+  cursor: pointer;
+}
+
+.status-chip span,
+.icon-label,
+.dock-label {
   display: block;
-  color: var(--text-ivory);
+  color: var(--text-muted);
   font-family: var(--font-display);
-  font-size: 0.78rem;
+  font-size: 0.68rem;
+  line-height: 1;
   text-transform: uppercase;
 }
 
-.icon-button {
+.status-chip strong {
+  color: var(--metal-bright);
+  font-size: 0.92rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.playfield {
+  position: absolute;
+  z-index: 2;
+  inset: 92px 0 122px;
+  display: grid;
+  place-items: center;
+  padding: 0 10px;
+}
+
+.puzzle-canvas {
+  width: min(94vw, 392px, 100%);
+  height: min(94vw, 392px, 100%);
+  max-height: 100%;
+  aspect-ratio: 1;
+  touch-action: none;
+  outline: none;
+  filter:
+    drop-shadow(0 22px 42px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 0 22px rgba(143, 201, 214, 0.14));
+}
+
+.puzzle-action-dock {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: end;
+  gap: 7px;
+  width: min(calc(100% - 24px), 372px);
+  min-height: 84px;
+  padding: 10px 10px 8px;
+  border: 1px solid rgba(242, 216, 156, 0.34);
+  border-radius: 28px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(143, 201, 214, 0.16), transparent 62%),
+    linear-gradient(180deg, rgba(11, 48, 42, 0.76), rgba(2, 10, 9, 0.88)),
+    var(--asset-ui-skin) center / 500px;
+  box-shadow:
+    inset 0 0 22px rgba(244, 214, 131, 0.08),
+    0 18px 44px rgba(0, 0, 0, 0.42);
+  transform: translateX(-50%);
+  backdrop-filter: blur(12px);
+}
+
+.icon-button,
+.reference-button {
   position: relative;
   display: grid;
   justify-items: center;
+  align-content: end;
   gap: 5px;
-  min-width: 54px;
+  min-width: 0;
+  min-height: 62px;
+  padding: 0;
+  color: var(--text-ivory);
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -520,160 +576,55 @@ svg {
 
 .icon-button:disabled {
   cursor: default;
-  opacity: 0.46;
+  opacity: 0.42;
 }
 
 .icon-shell {
-  width: var(--control-size);
-  height: var(--control-size);
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+}
+
+.raster-icon {
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.reference-button > .raster-icon {
+  width: 58px;
+  height: 58px;
+}
+
+.raster-icon--inline {
+  width: 34px;
+  height: 34px;
 }
 
 .icon-badge {
   position: absolute;
-  top: -5px;
-  right: 5px;
+  top: 2px;
+  right: 8px;
   display: grid;
   place-items: center;
-  min-width: 22px;
-  height: 22px;
-  font-size: 0.75rem;
+  min-width: 18px;
+  height: 18px;
+  font-size: 0.68rem;
   color: #061612;
   border-radius: 999px;
   background: var(--metal-bright);
 }
 
-.difficulty-badge {
+.reference-button {
   color: var(--text-ivory);
-  cursor: pointer;
 }
 
-.difficulty-badge strong {
-  display: block;
-  color: var(--metal-bright);
-  font-size: 1rem;
-}
-
-.playfield {
-  position: absolute;
-  z-index: 2;
-  inset: clamp(106px, 14dvh, 128px) 0 clamp(96px, 13dvh, 124px);
-  display: grid;
-  place-items: center;
-  padding: 0 clamp(6px, 2vw, 20px);
-}
-
-.puzzle-canvas {
-  width: min(94vw, 690px, 100%);
-  height: min(94vw, 690px, 100%);
-  max-height: 100%;
-  aspect-ratio: 1;
-  touch-action: none;
-  outline: none;
-  filter:
-    drop-shadow(0 24px 44px rgba(0, 0, 0, 0.48))
-    drop-shadow(0 0 20px rgba(143, 201, 214, 0.16));
-  transform: translateY(clamp(-72px, -7dvh, -42px));
-}
-
-.reference-medallion,
-.coupling-medallion,
-.pause-button {
-  position: absolute;
-  z-index: 5;
-  border: 0;
-  cursor: pointer;
-}
-
-.reference-medallion {
-  bottom: max(46px, env(safe-area-inset-bottom));
-  left: max(18px, env(safe-area-inset-left));
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  width: clamp(88px, 24vw, 132px);
-  padding: 0;
-  color: var(--text-ivory);
-  background: transparent;
-}
-
-.reference-art {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 100%;
-  aspect-ratio: 1;
-}
-
-.reference-frame {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 50%;
-  clip-path: circle(50% at 50% 50%);
-  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.36));
-}
-
-.reference-art .reference-image,
-.reference-art > svg {
-  position: absolute;
-  z-index: 2;
-  top: 50%;
-  left: 50%;
-  width: 72%;
-  height: 72%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  object-fit: cover;
-  transform: translate(-50%, -50%);
-  box-shadow:
-    0 0 0 1px rgba(242, 216, 156, 0.7),
-    0 0 18px rgba(143, 201, 214, 0.28);
-}
-
-.reference-art > svg {
-  width: 36%;
-  height: 36%;
-  color: var(--metal-bright);
-  box-shadow: none;
-}
-
-.reference-label,
-.coupling-medallion span {
-  margin-top: 2px;
-  font-size: 0.72rem;
-}
-
-.coupling-medallion {
-  right: max(24px, env(safe-area-inset-right));
-  bottom: max(34px, env(safe-area-inset-bottom));
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  color: var(--metal-bright);
-  background: transparent;
-}
-
-.coupling-medallion svg {
-  width: 52px;
-  height: 52px;
-  padding: 14px;
-  border: 1px solid rgba(242, 216, 156, 0.78);
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 45% 30%, rgba(92, 142, 121, 0.94), rgba(6, 27, 22, 0.98)),
-    var(--asset-ui-skin) center / 340px;
-  box-shadow:
-    inset 0 0 10px rgba(244, 214, 131, 0.18),
-    0 10px 20px rgba(0, 0, 0, 0.28);
-}
-
-.pause-button {
-  right: max(14px, env(safe-area-inset-right));
-  top: calc(max(12px, env(safe-area-inset-top)) + 86px);
-  width: 44px;
-  height: 44px;
+.dock-label {
+  font-size: 0.62rem;
 }
 
 .modal-backdrop {
@@ -713,6 +664,162 @@ svg {
   width: min(94vw, 620px);
 }
 
+.reference-screen {
+  position: fixed;
+  inset: 0;
+  left: 50%;
+  z-index: 20;
+  width: min(100vw, 430px);
+  height: 100dvh;
+  overflow: hidden;
+  color: var(--text-ivory);
+  background:
+    radial-gradient(circle at 50% 35%, rgba(143, 201, 214, 0.18), transparent 42%),
+    linear-gradient(180deg, rgba(2, 8, 7, 0.18), rgba(2, 8, 7, 0.84)),
+    var(--asset-loop-bg) center / cover no-repeat,
+    var(--bg-grove-deep);
+  box-shadow:
+    inset 0 0 0 1px rgba(242, 216, 156, 0.22),
+    0 0 0 999px rgba(1, 8, 7, 0.74);
+  transform: translateX(-50%);
+}
+
+.reference-screen__backdrop,
+.reference-screen__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reference-screen__backdrop {
+  opacity: 0.2;
+  filter: blur(14px) saturate(0.72);
+  transform: scale(1.08);
+}
+
+.reference-screen__image {
+  top: 88px;
+  left: 50%;
+  width: min(78vw, 300px);
+  height: min(78vw, 300px);
+  border: 1px solid rgba(242, 216, 156, 0.38);
+  border-radius: 50%;
+  opacity: 0.34;
+  object-fit: cover;
+  box-shadow:
+    0 0 0 10px rgba(3, 18, 15, 0.24),
+    0 18px 46px rgba(0, 0, 0, 0.44);
+  transform: translateX(-50%);
+}
+
+.reference-screen__shade {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 45%, transparent 0 23%, rgba(1, 8, 7, 0.18) 40%, rgba(1, 8, 7, 0.72) 100%),
+    linear-gradient(180deg, rgba(1, 8, 7, 0.28), transparent 34%, rgba(1, 8, 7, 0.62));
+}
+
+.reference-screen__header {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 58px 1fr 58px;
+  align-items: center;
+  min-height: 72px;
+  padding: max(12px, env(safe-area-inset-top)) 16px 10px;
+}
+
+.reference-screen__header h2 {
+  grid-column: 2;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reference-screen__header .close-button {
+  position: relative;
+  z-index: 2;
+}
+
+.magnifier-stage {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: min(80vw, 318px);
+  height: min(80vw, 318px);
+  transform: translate(-50%, -48%);
+}
+
+.magnifier-lens {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 2px solid rgba(242, 216, 156, 0.86);
+  border-radius: 50%;
+  background: rgba(2, 8, 7, 0.52);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 240, 194, 0.22),
+    inset 0 0 34px rgba(143, 201, 214, 0.16),
+    0 24px 60px rgba(0, 0, 0, 0.58),
+    0 0 42px rgba(143, 201, 214, 0.22);
+}
+
+.magnifier-lens::before {
+  position: absolute;
+  inset: 14px;
+  z-index: 2;
+  content: "";
+  border: 1px solid rgba(242, 216, 156, 0.18);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.magnifier-lens::after {
+  position: absolute;
+  top: 15%;
+  left: 20%;
+  z-index: 3;
+  width: 42%;
+  height: 16%;
+  content: "";
+  border-radius: 50%;
+  background: linear-gradient(130deg, rgba(255, 255, 255, 0.2), transparent 68%);
+  filter: blur(1px);
+  transform: rotate(-22deg);
+  pointer-events: none;
+}
+
+.magnifier-lens img {
+  width: 146%;
+  height: 146%;
+  object-fit: cover;
+  transform: translate(-14%, -16%);
+}
+
+.magnifier-handle {
+  position: absolute;
+  right: -10px;
+  bottom: 14px;
+  width: 84px;
+  height: 20px;
+  border: 1px solid rgba(242, 216, 156, 0.7);
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(242, 216, 156, 0.86), rgba(57, 95, 79, 0.94) 35%, rgba(5, 23, 19, 0.98)),
+    var(--asset-ui-skin) center / 260px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.42);
+  transform: rotate(42deg);
+  transform-origin: left center;
+}
+
 .modal-header {
   display: flex;
   align-items: center;
@@ -729,9 +836,19 @@ svg {
 }
 
 .close-button {
-  width: 42px;
-  height: 42px;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   cursor: pointer;
+}
+
+.close-button .raster-icon {
+  width: 56px;
+  height: 56px;
 }
 
 .settings-list,
@@ -739,17 +856,6 @@ svg {
 .score-grid {
   display: grid;
   gap: 10px;
-}
-
-.reference-window-image {
-  display: block;
-  width: 100%;
-  max-height: min(68dvh, 620px);
-  object-fit: contain;
-  border: 1px solid rgba(242, 216, 156, 0.55);
-  border-radius: 14px;
-  background: rgba(2, 8, 7, 0.34);
-  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.38);
 }
 
 .hint-coupling {
@@ -1029,29 +1135,12 @@ button:active {
     min-height: 50px;
   }
 
-  .icon-label {
-    display: none;
-  }
-
-  .difficulty-badge {
-    min-height: 58px;
-  }
-
-  .playfield {
-    inset: 86px 0 78px;
+  .puzzle-status {
+    top: max(10px, env(safe-area-inset-top));
   }
 }
 
 @media (max-width: 430px) {
-  .hud-top {
-    grid-template-columns: repeat(3, 52px) 72px;
-    gap: 5px;
-  }
-
-  .hud-top.is-no-map {
-    grid-template-columns: repeat(2, 52px) 72px;
-  }
-
   .icon-shell {
     width: 48px;
     height: 48px;
@@ -1059,14 +1148,6 @@ button:active {
 
   .icon-label {
     font-size: 0.66rem;
-  }
-
-  .difficulty-badge strong {
-    font-size: 0.8rem;
-  }
-
-  .offset-readout {
-    display: none;
   }
 }
 
@@ -1089,8 +1170,6 @@ button:active {
   }
 
   .game-screen {
-    max-width: 920px;
-    margin: 0 auto;
-    border-inline: 1px solid rgba(242, 216, 156, 0.2);
+    max-width: 430px;
   }
 }

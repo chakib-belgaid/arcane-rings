@@ -10,25 +10,32 @@ test("launches the Enchanted Grove menu and starts the seeded puzzle", async ({ 
   await page.getByRole("button", { name: "Play" }).click();
 
   await expect(page.getByLabel("Puzzle playfield")).toBeVisible();
-  await expect(page.locator(".moves-plaque")).toHaveCount(0);
+  await expect(page.getByText("Moves", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Ticks", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Time", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Open coupling map" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Map", exact: true })).toHaveCount(0);
+  await expect(page.locator(".pause-button")).toHaveCount(0);
+  await expect(page.locator(".puzzle-action-dock svg")).toHaveCount(0);
+  await expect(page.locator(".puzzle-action-dock img.raster-icon")).toHaveCount(5);
 
-  const referenceStage = await page.locator(".reference-art").boundingBox();
-  const referencePreview = await page.locator(".reference-medallion .reference-image").boundingBox();
-  expect(referenceStage).not.toBeNull();
-  expect(referencePreview).not.toBeNull();
-  expect(referencePreview!.width).toBeGreaterThan(referenceStage!.width * 0.6);
-  expect(Math.abs(referencePreview!.x + referencePreview!.width / 2 - (referenceStage!.x + referenceStage!.width / 2))).toBeLessThan(3);
+  const referenceButton = await page.getByRole("button", { name: "Open reference image" }).boundingBox();
+  const referenceIcon = await page.locator(".reference-button img.raster-icon").boundingBox();
+  expect(referenceButton).not.toBeNull();
+  expect(referenceIcon).not.toBeNull();
+  expect(referenceIcon!.width).toBeGreaterThan(50);
+  expect(Math.abs(referenceIcon!.x + referenceIcon!.width / 2 - (referenceButton!.x + referenceButton!.width / 2))).toBeLessThan(3);
 
   await page.getByRole("button", { name: "Open reference image" }).click();
   const referenceDialog = page.getByRole("dialog", { name: "Reference" });
   await expect(referenceDialog).toBeVisible();
   await expect(referenceDialog.getByRole("img", { name: /reference image/i })).toBeVisible();
+  await expect(referenceDialog.locator("button[aria-label='Close'] img.raster-icon")).toHaveCount(1);
   const dialogBox = await referenceDialog.boundingBox();
   expect(dialogBox).not.toBeNull();
-  expect(dialogBox!.width).toBeGreaterThan(referenceStage!.width * 2);
+  expect(dialogBox!.width).toBeGreaterThan(referenceButton!.width * 2);
+  expect(dialogBox!.height).toBeGreaterThan(700);
   await page.keyboard.press("Escape");
   await expect(referenceDialog).toBeHidden();
 });
@@ -96,14 +103,21 @@ test("keeps the mobile HUD compact around the playfield", async ({ page }) => {
   await page.getByRole("button", { name: "Play" }).click();
 
   const canvas = await page.locator("canvas").boundingBox();
-  const hud = await page.locator(".hud-top").boundingBox();
+  const status = await page.locator(".puzzle-status").boundingBox();
+  const dock = await page.getByTestId("puzzle-action-dock").boundingBox();
   const reference = await page.getByRole("button", { name: "Open reference image" }).boundingBox();
+  const settings = await page.getByRole("button", { name: "Settings" }).boundingBox();
 
   expect(canvas).not.toBeNull();
-  expect(hud).not.toBeNull();
+  expect(status).not.toBeNull();
+  expect(dock).not.toBeNull();
   expect(reference).not.toBeNull();
-  expect(hud!.y + hud!.height).toBeLessThan(canvas!.y + 16);
-  expect(reference!.y).toBeGreaterThan(canvas!.y + canvas!.height - 12);
+  expect(settings).not.toBeNull();
+  expect(status!.y + status!.height).toBeLessThan(canvas!.y);
+  expect(dock!.y).toBeGreaterThan(canvas!.y + canvas!.height);
+  expect(reference!.y).toBeGreaterThan(dock!.y);
+  expect(settings!.y).toBeGreaterThan(dock!.y);
+  expect(dock!.height).toBeLessThanOrEqual(100);
 });
 
 async function rotateRing(page: Page, ringIndex: number, ticks: number) {

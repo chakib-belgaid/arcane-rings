@@ -105,6 +105,11 @@ function drawRingBorders(
     const isSelected = state.selectedRing === index;
     const isAffected = state.affectedRings.includes(index);
     const isHinted = state.highlightedRing === index;
+    const shouldDrawRing = isSelected || isAffected || isHinted || state.highContrast || state.solved;
+
+    if (!shouldDrawRing) {
+      return;
+    }
 
     ctx.shadowBlur = isSelected || isHinted ? 22 : isAffected ? 14 : 0;
     ctx.shadowColor = isSelected || isHinted ? "rgba(244, 214, 131, 0.9)" : "rgba(135, 217, 191, 0.55)";
@@ -116,8 +121,8 @@ function drawRingBorders(
           ? "#8bd7bf"
           : state.highContrast
             ? "#f7ead2"
-            : "rgba(224, 198, 132, 0.78)";
-    ctx.lineWidth = isSelected || isHinted ? 5 : isAffected ? 3.5 : 2;
+            : "rgba(224, 198, 132, 0.48)";
+    ctx.lineWidth = isSelected || isHinted ? 5 : isAffected ? 3.5 : state.highContrast ? 2.4 : 1.4;
     ctx.beginPath();
     ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
     ctx.stroke();

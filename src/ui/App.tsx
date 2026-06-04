@@ -17,22 +17,27 @@ import {
   BookIcon,
   CalendarIcon,
   ChevronIcon,
-  CloseIcon,
   CollectionIcon,
-  HintIcon,
-  ImageIcon,
-  MapIcon,
-  RestartIcon,
   SettingsIcon,
-  UndoIcon
 } from "./icons";
 
 type Screen = "menu" | "play";
 type Overlay = "settings" | "coupling" | "reference" | "hint" | "win" | "levels" | "daily" | "collection" | null;
+type RasterIconName = "reference" | "undo" | "hint" | "restart" | "settings" | "close";
+
+const rasterIconPaths: Record<RasterIconName, string> = {
+  reference: "/assets/ui/puzzle-icon-reference.png",
+  undo: "/assets/ui/puzzle-icon-undo.png",
+  hint: "/assets/ui/puzzle-icon-hint.png",
+  restart: "/assets/ui/puzzle-icon-restart.png",
+  settings: "/assets/ui/puzzle-icon-settings.png",
+  close: "/assets/ui/puzzle-icon-close.png"
+};
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("menu");
   const [overlay, setOverlay] = useState<Overlay>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [saveData, setSaveData] = useState<SaveData>(() => {
     if (typeof window === "undefined") {
       return createDefaultSaveData();
@@ -52,6 +57,17 @@ export default function App() {
   useEffect(() => {
     persistSaveData(saveData);
   }, [saveData]);
+
+  useEffect(() => {
+    if (screen !== "play" || runtime.solvedAt !== null) {
+      return;
+    }
+
+    const updateTime = () => setNowMs(Date.now());
+    updateTime();
+    const intervalId = window.setInterval(updateTime, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [runtime.solvedAt, runtime.startedAt, screen]);
 
   useEffect(() => {
     if (runtime.isSolved && runtime.solvedAt === null) {
@@ -101,7 +117,7 @@ export default function App() {
   }, [overlay, runtime.selectedRing, screen]);
 
   const stars = getStars(demoLevel, runtime);
-  const elapsedMs = (runtime.solvedAt ?? Date.now()) - runtime.startedAt;
+  const elapsedMs = (runtime.solvedAt ?? nowMs) - runtime.startedAt;
 
   function startLevel() {
     dispatch({ type: "restart", now: Date.now() });
@@ -157,6 +173,7 @@ export default function App() {
         <PuzzleScreen
           runtime={runtime}
           overlay={overlay}
+          elapsedMs={elapsedMs}
           showReference={showReference}
           settings={saveData.settings}
           onDispatch={dispatch}
@@ -254,7 +271,7 @@ function MenuRow({
 function PuzzleScreen({
   runtime,
   overlay,
-  showReference,
+  elapsedMs,
   settings,
   onDispatch,
   onMenu,
@@ -262,40 +279,33 @@ function PuzzleScreen({
 }: {
   runtime: RuntimeState;
   overlay: Overlay;
+  elapsedMs: number;
   showReference: boolean;
   settings: UserSettings;
   onDispatch: (action: GameAction) => void;
   onMenu: () => void;
   onOpenOverlay: (overlay: Overlay) => void;
 }) {
-  const canShowCouplingMap = demoLevel.difficultyName === "easy" && demoLevel.showCouplingHints;
+  const restartPuzzle = () => {
+    if (runtime.moveHistory.length > 0 && !window.confirm("Restart this puzzle?")) {
+      return;
+    }
+
+    onDispatch({ type: "restart", now: Date.now() });
+  };
 
   return (
-    <main className="game-screen">
+    <main className="game-screen" data-testid="puzzle-stage" data-input-gated={String(overlay !== null)}>
       <div className="grove-vignette" aria-hidden="true" />
       <AmbientParticles variant="game" />
-      <header className={["hud-top", canShowCouplingMap ? "" : "is-no-map"].join(" ")}>
-        <IconButton label="Undo" onClick={() => onDispatch({ type: "undo" })} disabled={runtime.moveHistory.length === 0}>
-          <UndoIcon />
-        </IconButton>
-        <IconButton
-          label="Hint"
-          badge={runtime.hintedCoupling ? "1" : undefined}
-          onClick={() => {
-            onDispatch({ type: "requestHint" });
-            onOpenOverlay("hint");
-          }}
-        >
-          <HintIcon />
-        </IconButton>
-        {canShowCouplingMap ? (
-          <IconButton label="Map" onClick={() => onOpenOverlay("coupling")}>
-            <MapIcon />
-          </IconButton>
-        ) : null}
-        <button className="difficulty-badge" onClick={() => onOpenOverlay("levels")}>
-          <span>Hard</span>
-          <strong aria-label="Three stars">***</strong>
+      <header className="puzzle-status" aria-label="Puzzle status">
+        <div className="status-chip">
+          <span>Time</span>
+          <strong>{formatTime(elapsedMs)}</strong>
+        </div>
+        <button className="status-chip status-chip--button" onClick={() => onOpenOverlay("levels")}>
+          <span>Level</span>
+          <strong>{demoLevel.difficultyName}</strong>
         </button>
       </header>
 
@@ -310,25 +320,31 @@ function PuzzleScreen({
         />
       </section>
 
-      <button className={["reference-medallion", showReference ? "is-open" : ""].join(" ")} onClick={() => onOpenOverlay("reference")} aria-label="Open reference image">
-        <span className="reference-art" aria-hidden="true">
-          <img className="reference-frame" src={assets.referenceMedallion} alt="" />
-          {showReference ? <img className="reference-image" src={assets.puzzleGrove.src} alt="" /> : <ImageIcon />}
-        </span>
-        <span className="reference-label">Ref</span>
-      </button>
-
-      {canShowCouplingMap ? (
-        <button className="coupling-medallion" onClick={() => onOpenOverlay("coupling")} aria-label="Open coupling map">
-          <MapIcon />
-          <span>Coupling</span>
+      <nav className="puzzle-action-dock" data-testid="puzzle-action-dock" aria-label="Puzzle actions">
+        <button className="reference-button" onClick={() => onOpenOverlay("reference")} aria-label="Open reference image">
+          <RasterIcon name="reference" />
+          <span className="dock-label">Ref</span>
         </button>
-      ) : null}
-
-      <button className="pause-button" onClick={() => onOpenOverlay("settings")} aria-label="Open settings">
-        <SettingsIcon />
-      </button>
-
+        <IconButton label="Undo" onClick={() => onDispatch({ type: "undo" })} disabled={runtime.moveHistory.length === 0}>
+          <RasterIcon name="undo" />
+        </IconButton>
+        <IconButton
+          label="Hint"
+          badge={runtime.hintedCoupling ? "1" : undefined}
+          onClick={() => {
+            onDispatch({ type: "requestHint" });
+            onOpenOverlay("hint");
+          }}
+        >
+          <RasterIcon name="hint" />
+        </IconButton>
+        <IconButton label="Restart" onClick={restartPuzzle}>
+          <RasterIcon name="restart" />
+        </IconButton>
+        <IconButton label="Settings" onClick={() => onOpenOverlay("settings")}>
+          <RasterIcon name="settings" />
+        </IconButton>
+      </nav>
     </main>
   );
 }
@@ -353,6 +369,10 @@ function IconButton({
       <span className="icon-label">{label}</span>
     </button>
   );
+}
+
+function RasterIcon({ name, className = "" }: { name: RasterIconName; className?: string }) {
+  return <img className={["raster-icon", className].join(" ").trim()} src={rasterIconPaths[name]} alt="" aria-hidden="true" />;
 }
 
 function SettingsDialog({
@@ -410,7 +430,7 @@ function CouplingDrawer({ onClose }: { onClose: () => void }) {
         {edges.map((edge) => (
           <div className="coupling-edge" key={`${edge.controlRing}-${edge.visualRing}`}>
             <span>Ring {edge.controlRing + 1}</span>
-            <MapIcon />
+            <RasterIcon name="hint" className="raster-icon--inline" />
             <span>Ring {edge.visualRing + 1}</span>
             <strong>x{edge.factor}</strong>
           </div>
@@ -425,9 +445,23 @@ function CouplingDrawer({ onClose }: { onClose: () => void }) {
 
 function ReferenceDialog({ onClose }: { onClose: () => void }) {
   return (
-    <ModalFrame title="Reference" onClose={onClose} wide>
-      <img className="reference-window-image" src={assets.puzzleGrove.src} alt={`Reference image: ${assets.puzzleGrove.alt}`} />
-    </ModalFrame>
+    <div className="reference-screen" role="dialog" aria-modal="true" aria-label="Reference">
+      <img className="reference-screen__backdrop" src={assets.puzzleGrove.src} alt="" />
+      <div className="reference-screen__shade" aria-hidden="true" />
+      <header className="reference-screen__header">
+        <button className="close-button" aria-label="Close" onClick={onClose}>
+          <RasterIcon name="close" />
+        </button>
+        <h2>Reference</h2>
+      </header>
+      <div className="magnifier-stage">
+        <div className="magnifier-lens" aria-hidden="true">
+          <img src={assets.puzzleGrove.src} alt="" />
+        </div>
+        <div className="magnifier-handle" aria-hidden="true" />
+      </div>
+      <img className="reference-screen__image" src={assets.puzzleGrove.src} alt={`Reference image: ${assets.puzzleGrove.alt}`} />
+    </div>
   );
 }
 
@@ -437,7 +471,7 @@ function HintDialog({ edge, onClose }: { edge: CouplingEdge | null; onClose: () 
       {edge ? (
         <div className="hint-coupling" data-testid="hint-coupling">
           <span>Ring {edge.controlRing + 1}</span>
-          <MapIcon />
+          <RasterIcon name="hint" className="raster-icon--inline" />
           <span>Ring {edge.visualRing + 1}</span>
           <strong>x{edge.factor}</strong>
         </div>
@@ -565,7 +599,7 @@ function ModalFrame({
         <header className="modal-header">
           <h2 id={`dialog-${title}`}>{title}</h2>
           <button className="close-button" aria-label="Close" onClick={onClose}>
-            <CloseIcon />
+            <RasterIcon name="close" />
           </button>
         </header>
         {children}
