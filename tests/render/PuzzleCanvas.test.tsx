@@ -1,3 +1,4 @@
+import React from "react";
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -196,7 +197,7 @@ describe("PuzzleCanvas", () => {
       toJSON: () => undefined,
     });
 
-    const center = 210;
+    const center = 140;
     const radius = 80;
     const startAngle = -Math.PI / 2;
     const deltaAngle = ((2 * Math.PI) / 8) * 0.4;

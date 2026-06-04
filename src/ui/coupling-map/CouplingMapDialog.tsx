@@ -5,10 +5,19 @@ import { CouplingEdge } from "../types";
 
 type CouplingMapDialogProps = {
   edges: CouplingEdge[];
+  colorblindCoupling: boolean;
   onClose: () => void;
 };
 
-export function CouplingMapDialog({ edges, onClose }: CouplingMapDialogProps) {
+function couplingDirectionLabel(edge: CouplingEdge, colorblindCoupling: boolean): string {
+  if (colorblindCoupling) {
+    return edge.factor > 0 ? "positive" : "negative";
+  }
+
+  return edge.factor > 0 ? "same" : "opposite";
+}
+
+export function CouplingMapDialog({ edges, colorblindCoupling, onClose }: CouplingMapDialogProps) {
   return (
     <ModalShell title="Coupling Map" closeLabel="Close coupling map" onClose={onClose} className="drawer-shell">
       <div className="coupling-list" aria-label="Coupling edges">
@@ -17,7 +26,7 @@ export function CouplingMapDialog({ edges, onClose }: CouplingMapDialogProps) {
             <span>{`Ring ${edge.controlRing} -> Ring ${edge.visualRing} x${edge.factor}`}</span>
             <strong>
               {edge.factor > 0 ? <Plus aria-hidden="true" size={14} /> : <Minus aria-hidden="true" size={14} />}
-              {edge.factor > 0 ? "same" : "opposite"}
+              {couplingDirectionLabel(edge, colorblindCoupling)}
             </strong>
           </div>
         ))}

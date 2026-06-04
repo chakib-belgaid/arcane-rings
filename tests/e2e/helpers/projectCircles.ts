@@ -8,7 +8,7 @@ export type RingDragOptions = {
 
 export async function startSeededLevel(page: Page) {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Project Circles" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Arcane Rings" })).toBeVisible();
   await page.getByRole("button", { name: "Play" }).click();
   await page.getByRole("button", { name: "Start seeded level" }).click();
   await expect(page.getByTestId("puzzle-screen")).toBeVisible();

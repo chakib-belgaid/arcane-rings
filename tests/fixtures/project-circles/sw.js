@@ -1,5 +1,5 @@
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open("project-circles-fixture-v1").then((cache) => cache.addAll(["/"])));
+  event.waitUntil(caches.open("arcane-rings-fixture-v1").then((cache) => cache.addAll(["/"])));
 });
 
 self.addEventListener("fetch", (event) => {

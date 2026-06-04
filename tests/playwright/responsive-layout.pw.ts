@@ -12,7 +12,7 @@ test.describe("responsive layout", () => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto("/");
 
-      await expect(page.getByRole("heading", { name: "Project Circles" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Arcane Rings" })).toBeVisible();
       await expectLayoutFitsViewport(page);
       await expectVisibleButtonsAreTouchSafe(page);
 
@@ -33,6 +33,7 @@ test.describe("responsive layout", () => {
       await expectLayoutFitsViewport(page);
       await expectVisibleButtonsAreTouchSafe(page);
       await expectPuzzleChromeFitsViewport(page);
+      await expectHudButtonCentersAreClickable(page);
     });
   }
 });
@@ -103,4 +104,22 @@ async function expectPuzzleChromeFitsViewport(page: Page) {
   expect(geometry!.hud.bottom).toBeLessThanOrEqual(geometry!.viewportHeight);
   expect(geometry!.hud.top).toBeGreaterThan(geometry!.visual.top + geometry!.visual.width * 0.62);
   expect(geometry!.hud.height).toBeLessThanOrEqual(150);
+}
+
+async function expectHudButtonCentersAreClickable(page: Page) {
+  const interceptedButtons = await page.getByTestId("puzzle-hud").locator("button:visible").evaluateAll((buttons) =>
+    buttons
+      .map((button) => {
+        const rect = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        return {
+          label: button.getAttribute("aria-label") ?? button.textContent?.trim() ?? "unlabelled",
+          intercepted: hit !== button && !button.contains(hit),
+        };
+      })
+      .filter((button) => button.intercepted)
+      .map((button) => button.label),
+  );
+
+  expect(interceptedButtons).toEqual([]);
 }

@@ -1,11 +1,11 @@
 {
-  "name": "Project Circles",
-  "short_name": "Circles",
+  "name": "Arcane Rings",
+  "short_name": "Arcane",
   "description": "Restore circular images by aligning coupled rotating rings.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b1018",
-  "theme_color": "#0b1018",
+  "background_color": "#071712",
+  "theme_color": "#071712",
   "icons": [
     {
       "src": "/icons/icon.svg",

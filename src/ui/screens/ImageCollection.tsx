@@ -13,6 +13,17 @@ type ImageCollectionProps = {
   onStart: () => void;
 };
 
+type UploadStatus = "idle" | "reading" | "success" | "error";
+
+function imageTitleFromFile(file: File): string {
+  return (
+    file.name
+      .replace(/\.[^.]+$/, "")
+      .replace(/[-_]+/g, " ")
+      .trim() || "Uploaded Image"
+  );
+}
+
 export function ImageCollection({
   images,
   selectedImageId,
@@ -22,7 +33,9 @@ export function ImageCollection({
   onStart,
 }: ImageCollectionProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
+  const [uploadMessage, setUploadMessage] = useState("");
+  const isReadingUpload = uploadStatus === "reading";
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -33,21 +46,30 @@ export function ImageCollection({
     }
 
     if (!file.type.startsWith("image/")) {
-      setUploadError("Choose an image file.");
+      setUploadStatus("error");
+      setUploadMessage("Choose an image file.");
       return;
     }
 
+    const title = imageTitleFromFile(file);
     const reader = new window.FileReader();
+    setUploadStatus("reading");
+    setUploadMessage("Preparing image...");
     reader.onload = () => {
       if (typeof reader.result !== "string") {
-        setUploadError("Image upload failed.");
+        setUploadStatus("error");
+        setUploadMessage("Image upload failed.");
         return;
       }
 
-      setUploadError(null);
       onUploadImage(file, reader.result);
+      setUploadStatus("success");
+      setUploadMessage(`${title} added`);
     };
-    reader.onerror = () => setUploadError("Image upload failed.");
+    reader.onerror = () => {
+      setUploadStatus("error");
+      setUploadMessage("Image upload failed.");
+    };
     reader.readAsDataURL(file);
   };
 
@@ -64,12 +86,33 @@ export function ImageCollection({
           type="file"
           accept="image/*"
           hidden
+          disabled={isReadingUpload}
           onChange={handleFileChange}
         />
-        <IconButton icon={Upload} label="Upload image" text="Upload image" onClick={() => fileInputRef.current?.click()} />
-        <IconButton icon={Play} label="Play selected image" text="Play selected" variant="primary" onClick={onStart} />
+        <IconButton
+          icon={Upload}
+          label="Upload image"
+          text={isReadingUpload ? "Preparing..." : "Upload image"}
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isReadingUpload}
+        />
+        <IconButton
+          icon={Play}
+          label="Play selected image"
+          text="Play selected"
+          variant="primary"
+          onClick={onStart}
+          disabled={isReadingUpload}
+        />
       </section>
-      {uploadError ? <p className="collection-error">{uploadError}</p> : null}
+      {uploadMessage ? (
+        <p
+          className={`collection-status collection-status--${uploadStatus}`}
+          role={uploadStatus === "error" ? "alert" : "status"}
+        >
+          {uploadMessage}
+        </p>
+      ) : null}
       <section className="collection-grid" aria-label="Restored image archive">
         {images.map((item) => {
           const isSelected = item.id === selectedImageId;

@@ -1,16 +1,20 @@
-# Project Circles Playwright Harness
+# Arcane Rings Playwright Harness
 
-This workstream owns the browser acceptance harness only. Because this branch does
-not contain the integrated app shell, `playwright.config.ts` starts the lightweight
-fixture in `tests/fixtures/project-circles` by default.
-
-To retarget the same specs at the real app branch, start that app separately and
-set `PROJECT_CIRCLES_BASE_URL`:
+The default Playwright command builds and previews the integrated React app, then
+runs the app-shell and browser puzzle checks:
 
 ```bash
-PROJECT_CIRCLES_BASE_URL=http://127.0.0.1:3000 /opt/homebrew/bin/bunx playwright test
+/opt/homebrew/bin/bun run playwright
 ```
 
-The real app should expose the same stable roles and `data-testid` hooks used by
-the tests, or the helper selectors in `tests/e2e/helpers/projectCircles.ts` should
-be updated as the integration contract.
+The standalone fixture remains available for contract-level checks against
+`tests/fixtures/project-circles`:
+
+```bash
+/opt/homebrew/bin/bun run playwright:fixture
+```
+
+The app and fixture should expose the same stable roles and `data-testid` hooks
+used by the tests, or the helper selectors in
+`tests/e2e/helpers/projectCircles.ts` should be updated as the integration
+contract changes.

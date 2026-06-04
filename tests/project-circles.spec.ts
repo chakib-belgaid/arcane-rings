@@ -5,7 +5,7 @@ const ringRadii = [0.18, 0.34, 0.52, 0.72, 1];
 test("launches the Enchanted Grove menu and starts the seeded puzzle", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByLabel("Project Circles")).toBeVisible();
+  await expect(page.getByLabel("Arcane Rings")).toBeVisible();
   await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
   await page.getByRole("button", { name: "Play" }).click();
 
@@ -13,6 +13,7 @@ test("launches the Enchanted Grove menu and starts the seeded puzzle", async ({ 
   await expect(page.getByText("Moves", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Ticks", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Time", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Home" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Open coupling map" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Map", exact: true })).toHaveCount(0);
@@ -62,6 +63,9 @@ test("launches the Enchanted Grove menu and starts the seeded puzzle", async ({ 
   expect(dialogBox!.height).toBeGreaterThan(700);
   await page.keyboard.press("Escape");
   await expect(referenceDialog).toBeHidden();
+
+  await page.getByRole("button", { name: "Home" }).click();
+  await expect(page.getByLabel("Project Circles")).toBeVisible();
 });
 
 test("rotates a ring, undoes it, and gates input while hint is open", async ({ page }) => {
@@ -127,16 +131,19 @@ test("keeps the mobile HUD compact around the playfield", async ({ page }) => {
   await page.getByRole("button", { name: "Play" }).click();
 
   const canvas = await page.locator("canvas").boundingBox();
+  const home = await page.getByRole("button", { name: "Home" }).boundingBox();
   const status = await page.locator(".puzzle-status").boundingBox();
   const dock = await page.getByTestId("puzzle-action-dock").boundingBox();
   const reference = await page.getByRole("button", { name: "Open reference image" }).boundingBox();
   const settings = await page.getByRole("button", { name: "Settings" }).boundingBox();
 
   expect(canvas).not.toBeNull();
+  expect(home).not.toBeNull();
   expect(status).not.toBeNull();
   expect(dock).not.toBeNull();
   expect(reference).not.toBeNull();
   expect(settings).not.toBeNull();
+  expect(home!.x + home!.width).toBeLessThan(status!.x);
   expect(status!.y + status!.height).toBeLessThan(canvas!.y);
   expect(dock!.y).toBeGreaterThan(canvas!.y + canvas!.height);
   expect(reference!.y).toBeGreaterThan(dock!.y);

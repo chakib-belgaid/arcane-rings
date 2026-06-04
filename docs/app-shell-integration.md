@@ -1,6 +1,6 @@
 # App Shell Integration
 
-This branch establishes the PWA and React shell for Project Circles. It intentionally does not implement the math engine, level generation, image fairness checks, or production renderer.
+This branch establishes the PWA and React shell for Arcane Rings. It intentionally does not implement the math engine, level generation, image fairness checks, or production renderer.
 
 ## Public Contracts
 
@@ -23,6 +23,6 @@ Use Bun for this worktree:
 ```sh
 /opt/homebrew/bin/bun install
 /opt/homebrew/bin/bun run typecheck
-/opt/homebrew/bin/bun test
-/opt/homebrew/bin/bunx playwright test
+/opt/homebrew/bin/bun run test
+/opt/homebrew/bin/bun run playwright
 ```

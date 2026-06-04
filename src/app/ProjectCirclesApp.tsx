@@ -18,11 +18,11 @@ export function ProjectCirclesApp() {
 
   return (
     <main className="app-shell" aria-labelledby="app-title">
-      <section className="play-surface" aria-label="Seeded Project Circles placeholder">
+      <section className="play-surface" aria-label="Seeded Arcane Rings placeholder">
         <div className="brand-lockup">
           <span className="brand-mark" aria-hidden="true" />
           <div>
-            <h1 id="app-title">Project Circles</h1>
+            <h1 id="app-title">Arcane Rings</h1>
             <p>Seed {level.seed}</p>
           </div>
         </div>

@@ -1,11 +1,11 @@
-# Project Circles
+# Arcane Rings
 
-Project Circles is a mobile-first browser puzzle game about restoring circular
+Arcane Rings is a mobile-first browser puzzle game about restoring circular
 images. Each level slices an image into concentric rings. Players rotate control
 rings to align the picture, while level-specific coupling rules can make one
 move affect multiple visual rings.
 
-The current visual direction is Arcane Rings: compact fantasy UI, luminous ring
+The current visual direction is compact fantasy UI, luminous ring
 feedback, and a PWA shell built around a canvas puzzle surface.
 
 ## Features
@@ -47,7 +47,7 @@ Run the main verification commands:
 
 ```sh
 /opt/homebrew/bin/bun run typecheck
-/opt/homebrew/bin/bun test
+/opt/homebrew/bin/bun run test
 /opt/homebrew/bin/bun run build
 /opt/homebrew/bin/bun run playwright
 ```

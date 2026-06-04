@@ -68,6 +68,15 @@ export function CalendarIcon(props: IconProps) {
   );
 }
 
+export function HomeIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="m4 11 8-7 8 7" />
+      <path d="M6.5 10v10h5v-5h3v5h5V10" />
+    </IconBase>
+  );
+}
+
 export function BookIcon(props: IconProps) {
   return (
     <IconBase {...props}>

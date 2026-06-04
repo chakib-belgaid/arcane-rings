@@ -74,7 +74,7 @@ export function WinScreen({ result, onNext, onRetry, onMenu }: WinScreenProps) {
             </div>
           </dl>
           <div className="win-actions">
-            <IconButton icon={ArrowRight} label="Next level" text="Next level" variant="primary" onClick={onNext} />
+            <IconButton icon={ArrowRight} label="Play again" text="Play again" variant="primary" onClick={onNext} />
             <IconButton icon={RotateCcw} label="Retry" text="Retry" onClick={onRetry} />
             <IconButton icon={Home} label="Main menu" text="Menu" onClick={onMenu} />
           </div>

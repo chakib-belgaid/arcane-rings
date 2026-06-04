@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-test("loads the seeded Project Circles app shell", async ({ page }) => {
+test("loads the seeded Arcane Rings app shell", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "Project Circles" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Arcane Rings" })).toBeVisible();
   await page.getByRole("button", { name: "Play" }).click();
 
   await expect(page.getByTestId("puzzle-stage")).toBeVisible();
