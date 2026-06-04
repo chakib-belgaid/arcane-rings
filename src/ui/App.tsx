@@ -61,6 +61,11 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && overlay !== null) {
+        setOverlay(null);
+        return;
+      }
+
       if (screen !== "play") {
         return;
       }
