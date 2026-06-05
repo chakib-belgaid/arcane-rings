@@ -2,7 +2,10 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vite";
 
+const basePath = normalizeBasePath(process.env.VITE_BASE_PATH);
+
 export default defineConfig({
+  base: basePath,
   plugins: [
     react(),
     VitePWA({
@@ -15,9 +18,11 @@ export default defineConfig({
         background_color: "#071712",
         display: "standalone",
         orientation: "portrait",
+        scope: basePath,
+        start_url: basePath,
         icons: [
           {
-            src: "/icons/icon.svg",
+            src: `${basePath}icons/icon.svg`,
             sizes: "any",
             type: "image/svg+xml",
             purpose: "any"
@@ -27,3 +32,12 @@ export default defineConfig({
     })
   ]
 });
+
+function normalizeBasePath(basePath: string | undefined) {
+  if (!basePath) {
+    return "/";
+  }
+
+  const normalized = basePath.startsWith("/") ? basePath : `/${basePath}`;
+  return normalized.endsWith("/") ? normalized : `${normalized}/`;
+}

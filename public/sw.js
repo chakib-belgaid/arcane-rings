@@ -1,5 +1,10 @@
-const CACHE_NAME = "arcane-rings-shell-v2";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon.svg", "/brand/arcane-rings-logo.svg"];
+const CACHE_NAME = "arcane-rings-shell-v3";
+const APP_SHELL = [
+  scopedPath(""),
+  scopedPath("manifest.webmanifest"),
+  scopedPath("icons/icon.svg"),
+  scopedPath("brand/arcane-rings-logo.svg")
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -36,16 +41,21 @@ function isNavigationRequest(request) {
 
 async function networkFirst(request) {
   const cache = await caches.open(CACHE_NAME);
+  const appShellPath = scopedPath("");
 
   try {
     const response = await fetch(request);
     if (response.ok) {
-      await cache.put("/", response.clone());
+      await cache.put(appShellPath, response.clone());
     }
     return response;
   } catch {
-    return (await cache.match(request)) || (await cache.match("/"));
+    return (await cache.match(request)) || (await cache.match(appShellPath));
   }
+}
+
+function scopedPath(path) {
+  return new URL(path, self.registration.scope).pathname;
 }
 
 async function cacheFirst(request) {
