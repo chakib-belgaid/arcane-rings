@@ -1,3 +1,5 @@
+import { withBasePath } from "../config/assetPaths";
+
 export type SoundEffect =
   | "uiSelect"
   | "uiBack"
@@ -25,8 +27,8 @@ type SoundSpec = {
 };
 
 const musicSources: Record<MusicTrack, string> = {
-  menu: "/assets/audio/circles_01_moonlit_garden_menu_loop.wav",
-  gameplay: "/assets/audio/circles_02_emerald_rotation_gameplay_loop.wav"
+  menu: withBasePath("assets/audio/circles_01_moonlit_garden_menu_loop.wav"),
+  gameplay: withBasePath("assets/audio/circles_02_emerald_rotation_gameplay_loop.wav")
 };
 export const musicVolume = 0.52;
 const defaultMasterVolume = 1;
@@ -35,52 +37,52 @@ const maxClockworkTicks = 8;
 
 const soundEffects: Record<SoundEffect, SoundSpec> = {
   uiSelect: {
-    src: "/assets/audio/sfx_ui_select_01.wav",
+    src: withBasePath("assets/audio/sfx_ui_select_01.wav"),
     volume: 0.55,
     cooldownMs: 45,
     pitchVariance: 0.015
   },
   uiBack: {
-    src: "/assets/audio/sfx_ui_back_01.wav",
+    src: withBasePath("assets/audio/sfx_ui_back_01.wav"),
     volume: 0.5,
     cooldownMs: 45,
     pitchVariance: 0.01
   },
   ringSelect: {
-    src: "/assets/audio/sfx_puzzle_ring_select_01.wav",
+    src: withBasePath("assets/audio/sfx_puzzle_ring_select_01.wav"),
     volume: 0.46,
     cooldownMs: 70,
     pitchVariance: 0.02
   },
   ringTick: {
-    src: "/assets/audio/sfx_puzzle_tick_01.wav",
+    src: withBasePath("assets/audio/sfx_puzzle_tick_01.wav"),
     volume: 0.66,
     cooldownMs: 45,
     pitchVariance: 0.025
   },
   hint: {
-    src: "/assets/audio/sfx_puzzle_hint_01.wav",
+    src: withBasePath("assets/audio/sfx_puzzle_hint_01.wav"),
     volume: 0.58,
     cooldownMs: 220,
     pitchVariance: 0.01
   },
   reference: {
-    src: "/assets/audio/sfx_puzzle_reference_01.wav",
+    src: withBasePath("assets/audio/sfx_puzzle_reference_01.wav"),
     volume: 0.5,
     cooldownMs: 160
   },
   coupling: {
-    src: "/assets/audio/sfx_puzzle_coupling_open_01.wav",
+    src: withBasePath("assets/audio/sfx_puzzle_coupling_open_01.wav"),
     volume: 0.52,
     cooldownMs: 160
   },
   complete: {
-    src: "/assets/audio/circles_03_circle_solved_success_stinger.wav",
+    src: withBasePath("assets/audio/circles_03_circle_solved_success_stinger.wav"),
     volume: 0.74,
     cooldownMs: 1000
   },
   blocked: {
-    src: "/assets/audio/sfx_puzzle_blocked_01.wav",
+    src: withBasePath("assets/audio/sfx_puzzle_blocked_01.wav"),
     volume: 0.42,
     cooldownMs: 120
   }

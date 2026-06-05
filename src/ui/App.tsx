@@ -30,12 +30,12 @@ type RasterIconName = "reference" | "undo" | "hint" | "restart" | "settings" | "
 type OpenOverlay = (overlay: Overlay, sound?: SoundEffect | null) => void;
 
 const rasterIconPaths: Record<RasterIconName, string> = {
-  reference: "/assets/ui/puzzle-icon-reference.png",
-  undo: "/assets/ui/puzzle-icon-undo.png",
-  hint: "/assets/ui/puzzle-icon-hint.png",
-  restart: "/assets/ui/puzzle-icon-restart.png",
-  settings: "/assets/ui/puzzle-icon-settings.png",
-  close: "/assets/ui/puzzle-icon-close.png"
+  reference: assets.uiIcons.reference,
+  undo: assets.uiIcons.undo,
+  hint: assets.uiIcons.hint,
+  restart: assets.uiIcons.restart,
+  settings: assets.uiIcons.settings,
+  close: assets.uiIcons.close
 };
 
 export default function App() {
@@ -327,7 +327,7 @@ function MainMenu({
       <AmbientParticles variant="menu" />
       <section className="title-medallion" aria-label="Arcane Rings">
         <h1 className="brand-lockup">
-          <img className="brand-logo" src="/brand/arcane-rings-logo.svg" alt="Arcane Rings" />
+          <img className="brand-logo" src={assets.brandLogo} alt="Arcane Rings" />
         </h1>
       </section>
       <button className="play-button" onClick={onPlay}>

@@ -127,6 +127,30 @@ Run the standalone Playwright fixture suite:
 /opt/homebrew/bin/bun run playwright:fixture
 ```
 
+## CI/CD And GitHub Pages
+
+The repository includes two GitHub Actions workflows:
+
+- `.github/workflows/ci.yml` runs on pushes to `main` and `feat/**`, plus pull
+  requests. It installs with Bun 1.3.14, then runs typecheck, Vitest, the
+  production build, and mobile Playwright coverage.
+- `.github/workflows/pages.yml` runs on pushes to `main` or manual dispatch. It
+  gates deployment with typecheck, Vitest, and mobile Playwright, then builds
+  with `VITE_BASE_PATH=/${{ github.event.repository.name }}/` and deploys
+  `dist` to GitHub Pages.
+
+For a local GitHub Pages artifact build:
+
+```sh
+/opt/homebrew/bin/bun run build:pages
+```
+
+Run the mobile deploy gate locally:
+
+```sh
+/opt/homebrew/bin/bun run test:e2e:mobile
+```
+
 ## Project Structure
 
 - `src/app` contains the early app shell and service-worker registration.
