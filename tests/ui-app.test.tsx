@@ -101,10 +101,16 @@ describe("Arcane Rings menu and overlay UI", () => {
     expect(screen.getByText("No unlocked Beginner levels yet.")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Back to difficulty" }));
 
+    await user.click(screen.getByRole("button", { name: "Open Easy levels" }));
+    expect(screen.getByRole("heading", { name: "Easy Levels" })).toBeTruthy();
+    expect(screen.getByText("Sunlit Glasshouse")).toBeTruthy();
+    expect(screen.getByText("Clockwork Lily Pond")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Back to difficulty" }));
+
     await user.click(screen.getByRole("button", { name: "Open Medium levels" }));
     expect(screen.getByRole("heading", { name: "Medium Levels" })).toBeTruthy();
-    expect(screen.getByText("Rings 5")).toBeTruthy();
-    expect(screen.getByText("Hints available")).toBeTruthy();
+    expect(screen.getAllByText("Rings 5").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Hints available").length).toBeGreaterThan(0);
   });
 
   test("puzzle screen keeps a compact HUD and gates input while coupling map is open", async () => {
