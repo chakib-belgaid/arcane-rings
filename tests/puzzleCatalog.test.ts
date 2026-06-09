@@ -26,14 +26,18 @@ function optimalTickCost(level: PuzzleLevelFixture): number {
 
 describe("generated puzzle catalog", () => {
   test("contains the generated playable puzzle set", () => {
-    expect(generatedPuzzleLevels).toHaveLength(25);
+    expect(generatedPuzzleLevels).toHaveLength(35);
     expect(generatedImagePresets).toHaveLength(25);
-    expect(new Set(generatedPuzzleLevels.map((level) => level.id)).size).toBe(25);
-    expect(new Set(generatedPuzzleLevels.map((level) => level.imageId)).size).toBe(25);
+    expect(new Set(generatedPuzzleLevels.map((level) => level.id)).size).toBe(35);
+    const generatedImageIds = new Set(generatedImagePresets.map((image) => image.id));
+    expect(generatedImageIds.size).toBe(25);
+    expect(generatedPuzzleLevels.every((level) => generatedImageIds.has(level.imageId))).toBe(true);
 
+    expect(generatedPuzzleLevels.filter((level) => level.difficulty === "beginner")).toHaveLength(5);
     expect(generatedPuzzleLevels.filter((level) => level.difficulty === "easy")).toHaveLength(15);
     expect(generatedPuzzleLevels.filter((level) => level.difficulty === "medium")).toHaveLength(5);
     expect(generatedPuzzleLevels.filter((level) => level.difficulty === "hard")).toHaveLength(5);
+    expect(generatedPuzzleLevels.filter((level) => level.difficulty === "expert")).toHaveLength(5);
   });
 
   test("has project-local image files for every generated puzzle", () => {

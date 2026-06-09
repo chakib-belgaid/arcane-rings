@@ -98,7 +98,8 @@ describe("Arcane Rings menu and overlay UI", () => {
 
     await user.click(screen.getByRole("button", { name: "Open Beginner levels" }));
     expect(screen.getByRole("heading", { name: "Beginner Levels" })).toBeTruthy();
-    expect(screen.getByText("No unlocked Beginner levels yet.")).toBeTruthy();
+    expect(screen.getByText("Glasshouse Primer")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Start Glasshouse Primer" })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Back to difficulty" }));
 
     await user.click(screen.getByRole("button", { name: "Open Easy levels" }));
@@ -111,6 +112,12 @@ describe("Arcane Rings menu and overlay UI", () => {
     expect(screen.getByRole("heading", { name: "Medium Levels" })).toBeTruthy();
     expect(screen.getAllByText("Rings 5").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Hints available").length).toBeGreaterThan(0);
+    await user.click(screen.getByRole("button", { name: "Back to difficulty" }));
+
+    await user.click(screen.getByRole("button", { name: "Open Expert levels" }));
+    expect(screen.getByRole("heading", { name: "Expert Levels" })).toBeTruthy();
+    expect(screen.getByText("Star Forge Crucible")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Start Star Forge Crucible" })).toBeTruthy();
   });
 
   test("puzzle screen keeps a compact HUD and gates input while coupling map is open", async () => {

@@ -1,4 +1,4 @@
-import { CollectionItem, DifficultyTrack, LevelCard, PuzzleImageSource, PuzzleLevelFixture } from "./types";
+import { CollectionItem, DifficultyName, DifficultyTrack, LevelCard, PuzzleImageSource, PuzzleLevelFixture } from "./types";
 import { WinResult } from "./screens/WinScreen";
 import { generateLevel } from "../generation/levelGenerator";
 import { cyclicDistance } from "../math/mod";
@@ -71,47 +71,67 @@ export const fixtureLevel: PuzzleLevelFixture = {
   ],
 };
 
-type GeneratedPuzzleSpec = {
-  difficulty: "easy" | "medium" | "hard";
+type GeneratedImageSpec = {
   slug: string;
   title: string;
 };
 
-const generatedPuzzleSpecs: GeneratedPuzzleSpec[] = [
-  { difficulty: "easy", slug: "sunlit-glasshouse", title: "Sunlit Glasshouse" },
-  { difficulty: "easy", slug: "clockwork-lily-pond", title: "Clockwork Lily Pond" },
-  { difficulty: "easy", slug: "amber-library-nook", title: "Amber Library Nook" },
-  { difficulty: "easy", slug: "lantern-market-circle", title: "Lantern Market Circle" },
-  { difficulty: "easy", slug: "crystal-tea-garden", title: "Crystal Tea Garden" },
-  { difficulty: "easy", slug: "sunny-meadow-path", title: "Sunny Meadow Path" },
-  { difficulty: "easy", slug: "pebble-moon-pond", title: "Pebble Moon Pond" },
-  { difficulty: "easy", slug: "cozy-hearth-kitchen", title: "Cozy Hearth Kitchen" },
-  { difficulty: "easy", slug: "blue-tile-courtyard", title: "Blue Tile Courtyard" },
-  { difficulty: "easy", slug: "lantern-bridge", title: "Lantern Bridge" },
-  { difficulty: "easy", slug: "apple-orchard-gate", title: "Apple Orchard Gate" },
-  { difficulty: "easy", slug: "shell-fountain-plaza", title: "Shell Fountain Plaza" },
-  { difficulty: "easy", slug: "honeycomb-conservatory", title: "Honeycomb Conservatory" },
-  { difficulty: "easy", slug: "willow-tea-terrace", title: "Willow Tea Terrace" },
-  { difficulty: "easy", slug: "cloudstep-patio", title: "Cloudstep Patio" },
-  { difficulty: "medium", slug: "sapphire-astral-orrery", title: "Sapphire Astral Orrery" },
-  { difficulty: "medium", slug: "verdant-rail-conservatory", title: "Verdant Rail Conservatory" },
-  { difficulty: "medium", slug: "tideglass-atrium", title: "Tideglass Atrium" },
-  { difficulty: "medium", slug: "ember-cartographer-hall", title: "Ember Cartographer Hall" },
-  { difficulty: "medium", slug: "frost-lantern-causeway", title: "Frost Lantern Causeway" },
-  { difficulty: "hard", slug: "obsidian-star-forge", title: "Obsidian Star Forge" },
-  { difficulty: "hard", slug: "tempest-observatory", title: "Tempest Observatory" },
-  { difficulty: "hard", slug: "crimson-gear-cathedral", title: "Crimson Gear Cathedral" },
-  { difficulty: "hard", slug: "eclipsed-coral-vault", title: "Eclipsed Coral Vault" },
-  { difficulty: "hard", slug: "arcane-glacier-engine", title: "Arcane Glacier Engine" },
+type GeneratedPuzzleSpec = GeneratedImageSpec & {
+  difficulty: DifficultyName;
+  imageId?: string;
+};
+
+const generatedImageSpecs: GeneratedImageSpec[] = [
+  { slug: "sunlit-glasshouse", title: "Sunlit Glasshouse" },
+  { slug: "clockwork-lily-pond", title: "Clockwork Lily Pond" },
+  { slug: "amber-library-nook", title: "Amber Library Nook" },
+  { slug: "lantern-market-circle", title: "Lantern Market Circle" },
+  { slug: "crystal-tea-garden", title: "Crystal Tea Garden" },
+  { slug: "sunny-meadow-path", title: "Sunny Meadow Path" },
+  { slug: "pebble-moon-pond", title: "Pebble Moon Pond" },
+  { slug: "cozy-hearth-kitchen", title: "Cozy Hearth Kitchen" },
+  { slug: "blue-tile-courtyard", title: "Blue Tile Courtyard" },
+  { slug: "lantern-bridge", title: "Lantern Bridge" },
+  { slug: "apple-orchard-gate", title: "Apple Orchard Gate" },
+  { slug: "shell-fountain-plaza", title: "Shell Fountain Plaza" },
+  { slug: "honeycomb-conservatory", title: "Honeycomb Conservatory" },
+  { slug: "willow-tea-terrace", title: "Willow Tea Terrace" },
+  { slug: "cloudstep-patio", title: "Cloudstep Patio" },
+  { slug: "sapphire-astral-orrery", title: "Sapphire Astral Orrery" },
+  { slug: "verdant-rail-conservatory", title: "Verdant Rail Conservatory" },
+  { slug: "tideglass-atrium", title: "Tideglass Atrium" },
+  { slug: "ember-cartographer-hall", title: "Ember Cartographer Hall" },
+  { slug: "frost-lantern-causeway", title: "Frost Lantern Causeway" },
+  { slug: "obsidian-star-forge", title: "Obsidian Star Forge" },
+  { slug: "tempest-observatory", title: "Tempest Observatory" },
+  { slug: "crimson-gear-cathedral", title: "Crimson Gear Cathedral" },
+  { slug: "eclipsed-coral-vault", title: "Eclipsed Coral Vault" },
+  { slug: "arcane-glacier-engine", title: "Arcane Glacier Engine" },
 ];
 
-export const generatedImagePresets: PuzzleImageSource[] = generatedPuzzleSpecs.map((spec) => ({
+const generatedPuzzleSpecs: GeneratedPuzzleSpec[] = [
+  { difficulty: "beginner", slug: "glasshouse-primer", title: "Glasshouse Primer", imageId: "sunlit-glasshouse" },
+  { difficulty: "beginner", slug: "lily-pond-primer", title: "Lily Pond Primer", imageId: "clockwork-lily-pond" },
+  { difficulty: "beginner", slug: "library-primer", title: "Library Primer", imageId: "amber-library-nook" },
+  { difficulty: "beginner", slug: "market-primer", title: "Market Primer", imageId: "lantern-market-circle" },
+  { difficulty: "beginner", slug: "tea-garden-primer", title: "Tea Garden Primer", imageId: "crystal-tea-garden" },
+  ...generatedImageSpecs.slice(0, 15).map((spec) => ({ ...spec, difficulty: "easy" as const })),
+  ...generatedImageSpecs.slice(15, 20).map((spec) => ({ ...spec, difficulty: "medium" as const })),
+  ...generatedImageSpecs.slice(20, 25).map((spec) => ({ ...spec, difficulty: "hard" as const })),
+  { difficulty: "expert", slug: "star-forge-crucible", title: "Star Forge Crucible", imageId: "obsidian-star-forge" },
+  { difficulty: "expert", slug: "tempest-crucible", title: "Tempest Crucible", imageId: "tempest-observatory" },
+  { difficulty: "expert", slug: "gear-cathedral-crucible", title: "Gear Cathedral Crucible", imageId: "crimson-gear-cathedral" },
+  { difficulty: "expert", slug: "coral-vault-crucible", title: "Coral Vault Crucible", imageId: "eclipsed-coral-vault" },
+  { difficulty: "expert", slug: "glacier-engine-crucible", title: "Glacier Engine Crucible", imageId: "arcane-glacier-engine" },
+];
+
+export const generatedImagePresets: PuzzleImageSource[] = generatedImageSpecs.map((spec, index) => ({
   id: spec.slug,
   title: spec.title,
   src: `/presets/generated/${spec.slug}.png`,
   source: "preset",
   stars: 0,
-  difficulty: spec.difficulty,
+  difficulty: index < 15 ? "easy" : index < 20 ? "medium" : "hard",
   bestMoves: null,
   unlockedAt: "Default",
 }));
@@ -168,9 +188,10 @@ function solutionTickCost(solution: number[], ticks: number) {
 
 export const generatedPuzzleLevels: PuzzleLevelFixture[] = generatedPuzzleSpecs.map((spec) => {
   const id = `${spec.difficulty}-${spec.slug}`;
+  const imageId = spec.imageId ?? spec.slug;
   const generated = generateLevel({
     id,
-    imageId: spec.slug,
+    imageId,
     seed: `catalog-${id}`,
     difficultyName: spec.difficulty,
     showReferenceThumbnail: true,
@@ -179,7 +200,7 @@ export const generatedPuzzleLevels: PuzzleLevelFixture[] = generatedPuzzleSpecs.
 
   return {
     id,
-    imageId: spec.slug,
+    imageId,
     title: spec.title,
     difficulty: spec.difficulty,
     rings: generated.n,
