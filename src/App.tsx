@@ -7,7 +7,7 @@ import { ImageCollection } from "./ui/screens/ImageCollection";
 import { PuzzleScreen } from "./ui/screens/PuzzleScreen";
 import { AppSettings, defaultAppSettings, SettingsOverlay } from "./ui/screens/SettingsOverlay";
 import { WinScreen, WinResult } from "./ui/screens/WinScreen";
-import { defaultImagePresets, fixtureLevel } from "./ui/fixtureData";
+import { defaultImagePresets, fixtureLevel, puzzleLevels } from "./ui/fixtureData";
 import { DifficultyName, PuzzleImageSource } from "./ui/types";
 import { BEST_SCORE_STORAGE_PREFIXES_TO_CLEAR, SETTINGS_STORAGE_KEY } from "./persistence/storageKeys";
 
@@ -42,6 +42,7 @@ function normalizeStoredVolume(volume: unknown) {
 export function App() {
   const [screen, setScreen] = useState<AppScreen>("menu");
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyName>("medium");
+  const [selectedLevelId, setSelectedLevelId] = useState(fixtureLevel.id);
   const [uploadedImages, setUploadedImages] = useState<PuzzleImageSource[]>([]);
   const [selectedImageId, setSelectedImageId] = useState(defaultImagePresets[0].id);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -49,6 +50,7 @@ export function App() {
   const [result, setResult] = useState<WinResult | null>(null);
   const [puzzleSessionId, setPuzzleSessionId] = useState(0);
   const imageChoices = useMemo(() => [...defaultImagePresets, ...uploadedImages], [uploadedImages]);
+  const selectedLevel = puzzleLevels.find((level) => level.id === selectedLevelId) ?? fixtureLevel;
   const selectedImage = imageChoices.find((image) => image.id === selectedImageId) ?? defaultImagePresets[0];
 
   useEffect(() => {
@@ -84,11 +86,30 @@ export function App() {
     setScreen("levels");
   };
 
-  const startPuzzle = () => {
+  const launchPuzzle = () => {
     gameAudio.playSfx("uiSelect");
     setResult(null);
     setPuzzleSessionId((sessionId) => sessionId + 1);
     setScreen("puzzle");
+  };
+
+  const startCurrentPuzzle = () => {
+    launchPuzzle();
+  };
+
+  const startLevelPuzzle = (levelId: string) => {
+    const level = puzzleLevels.find((candidate) => candidate.id === levelId) ?? fixtureLevel;
+    setSelectedLevelId(level.id);
+    setSelectedImageId(level.imageId);
+    launchPuzzle();
+  };
+
+  const startImagePuzzle = () => {
+    const matchingLevel = puzzleLevels.find((level) => level.imageId === selectedImage.id);
+    if (matchingLevel) {
+      setSelectedLevelId(matchingLevel.id);
+    }
+    launchPuzzle();
   };
 
   const addUploadedImage = (file: File, dataUrl: string) => {
@@ -143,8 +164,8 @@ export function App() {
     >
       {screen === "menu" ? (
         <MainMenu
-          onPlay={startPuzzle}
-          onDaily={startPuzzle}
+          onPlay={startCurrentPuzzle}
+          onDaily={startCurrentPuzzle}
           dailyDisabled
           onDifficulty={() => openScreen("difficulty")}
           onCollection={() => openScreen("collection")}
@@ -163,7 +184,7 @@ export function App() {
         <LevelSelection
           difficulty={selectedDifficulty}
           onBack={() => goBack("difficulty")}
-          onStart={startPuzzle}
+          onStart={startLevelPuzzle}
         />
       ) : null}
 
@@ -177,14 +198,14 @@ export function App() {
             setSelectedImageId(imageId);
           }}
           onUploadImage={addUploadedImage}
-          onStart={startPuzzle}
+          onStart={startImagePuzzle}
         />
       ) : null}
 
       {screen === "puzzle" ? (
         <PuzzleScreen
           key={`${selectedImage.id}-${puzzleSessionId}`}
-          level={fixtureLevel}
+          level={selectedLevel}
           imageSrc={selectedImage.src}
           imageTitle={selectedImage.title}
           inputBlocked={settingsOpen || result !== null}
@@ -215,8 +236,8 @@ export function App() {
       {result ? (
         <WinScreen
           result={result}
-          onNext={startPuzzle}
-          onRetry={startPuzzle}
+          onNext={startCurrentPuzzle}
+          onRetry={startCurrentPuzzle}
           onMenu={() => {
             gameAudio.playSfx("uiBack");
             setResult(null);

@@ -1,5 +1,7 @@
 import { CollectionItem, DifficultyTrack, LevelCard, PuzzleImageSource, PuzzleLevelFixture } from "./types";
 import { WinResult } from "./screens/WinScreen";
+import { generateLevel } from "../generation/levelGenerator";
+import { cyclicDistance } from "../math/mod";
 
 export const difficultyTracks: DifficultyTrack[] = [
   {
@@ -49,33 +51,9 @@ export const difficultyTracks: DifficultyTrack[] = [
   },
 ];
 
-export const levelCards: LevelCard[] = [
-  {
-    id: "medium-01",
-    title: "Moon Gate Archive",
-    difficulty: "medium",
-    rings: 5,
-    ticks: 12,
-    bestStars: 3,
-    bestMoves: 24,
-    hintsAvailable: true,
-    locked: false,
-  },
-  {
-    id: "medium-02",
-    title: "Silver Causeway",
-    difficulty: "medium",
-    rings: 6,
-    ticks: 12,
-    bestStars: 0,
-    bestMoves: null,
-    hintsAvailable: false,
-    locked: true,
-  },
-];
-
 export const fixtureLevel: PuzzleLevelFixture = {
   id: "medium-01",
+  imageId: "moon-gate-archive",
   title: "Moon Gate Archive",
   difficulty: "medium",
   rings: 5,
@@ -92,6 +70,51 @@ export const fixtureLevel: PuzzleLevelFixture = {
     { controlRing: 4, visualRing: 5, factor: -2 },
   ],
 };
+
+type GeneratedPuzzleSpec = {
+  difficulty: "easy" | "medium" | "hard";
+  slug: string;
+  title: string;
+};
+
+const generatedPuzzleSpecs: GeneratedPuzzleSpec[] = [
+  { difficulty: "easy", slug: "sunlit-glasshouse", title: "Sunlit Glasshouse" },
+  { difficulty: "easy", slug: "clockwork-lily-pond", title: "Clockwork Lily Pond" },
+  { difficulty: "easy", slug: "amber-library-nook", title: "Amber Library Nook" },
+  { difficulty: "easy", slug: "lantern-market-circle", title: "Lantern Market Circle" },
+  { difficulty: "easy", slug: "crystal-tea-garden", title: "Crystal Tea Garden" },
+  { difficulty: "easy", slug: "sunny-meadow-path", title: "Sunny Meadow Path" },
+  { difficulty: "easy", slug: "pebble-moon-pond", title: "Pebble Moon Pond" },
+  { difficulty: "easy", slug: "cozy-hearth-kitchen", title: "Cozy Hearth Kitchen" },
+  { difficulty: "easy", slug: "blue-tile-courtyard", title: "Blue Tile Courtyard" },
+  { difficulty: "easy", slug: "lantern-bridge", title: "Lantern Bridge" },
+  { difficulty: "easy", slug: "apple-orchard-gate", title: "Apple Orchard Gate" },
+  { difficulty: "easy", slug: "shell-fountain-plaza", title: "Shell Fountain Plaza" },
+  { difficulty: "easy", slug: "honeycomb-conservatory", title: "Honeycomb Conservatory" },
+  { difficulty: "easy", slug: "willow-tea-terrace", title: "Willow Tea Terrace" },
+  { difficulty: "easy", slug: "cloudstep-patio", title: "Cloudstep Patio" },
+  { difficulty: "medium", slug: "sapphire-astral-orrery", title: "Sapphire Astral Orrery" },
+  { difficulty: "medium", slug: "verdant-rail-conservatory", title: "Verdant Rail Conservatory" },
+  { difficulty: "medium", slug: "tideglass-atrium", title: "Tideglass Atrium" },
+  { difficulty: "medium", slug: "ember-cartographer-hall", title: "Ember Cartographer Hall" },
+  { difficulty: "medium", slug: "frost-lantern-causeway", title: "Frost Lantern Causeway" },
+  { difficulty: "hard", slug: "obsidian-star-forge", title: "Obsidian Star Forge" },
+  { difficulty: "hard", slug: "tempest-observatory", title: "Tempest Observatory" },
+  { difficulty: "hard", slug: "crimson-gear-cathedral", title: "Crimson Gear Cathedral" },
+  { difficulty: "hard", slug: "eclipsed-coral-vault", title: "Eclipsed Coral Vault" },
+  { difficulty: "hard", slug: "arcane-glacier-engine", title: "Arcane Glacier Engine" },
+];
+
+export const generatedImagePresets: PuzzleImageSource[] = generatedPuzzleSpecs.map((spec) => ({
+  id: spec.slug,
+  title: spec.title,
+  src: `/presets/generated/${spec.slug}.png`,
+  source: "preset",
+  stars: 0,
+  difficulty: spec.difficulty,
+  bestMoves: null,
+  unlockedAt: "Default",
+}));
 
 export const defaultImagePresets: PuzzleImageSource[] = [
   {
@@ -124,7 +147,68 @@ export const defaultImagePresets: PuzzleImageSource[] = [
     bestMoves: null,
     unlockedAt: "Default",
   },
+  ...generatedImagePresets,
 ];
+
+function edgeListFromMatrix(matrix: number[][]) {
+  return matrix.flatMap((row, visualRing) =>
+    row.flatMap((factor, controlRing) => {
+      if (visualRing <= controlRing || factor === 0) {
+        return [];
+      }
+
+      return [{ controlRing: controlRing + 1, visualRing: visualRing + 1, factor }];
+    })
+  );
+}
+
+function solutionTickCost(solution: number[], ticks: number) {
+  return solution.reduce((sum, value) => sum + cyclicDistance(value, ticks), 0);
+}
+
+export const generatedPuzzleLevels: PuzzleLevelFixture[] = generatedPuzzleSpecs.map((spec) => {
+  const id = `${spec.difficulty}-${spec.slug}`;
+  const generated = generateLevel({
+    id,
+    imageId: spec.slug,
+    seed: `catalog-${id}`,
+    difficultyName: spec.difficulty,
+    showReferenceThumbnail: true,
+    showCouplingHints: spec.difficulty !== "hard",
+  });
+
+  return {
+    id,
+    imageId: spec.slug,
+    title: spec.title,
+    difficulty: spec.difficulty,
+    rings: generated.n,
+    ticks: generated.q,
+    moves: solutionTickCost(generated.solution, generated.q),
+    initialOffsets: generated.initialOffsets,
+    solution: generated.solution,
+    showReferenceThumbnail: generated.showReferenceThumbnail,
+    showCouplingHints: generated.showCouplingHints,
+    edges: edgeListFromMatrix(generated.matrix),
+  };
+});
+
+export const puzzleLevels: PuzzleLevelFixture[] = [fixtureLevel, ...generatedPuzzleLevels];
+
+const imageById = new Map(defaultImagePresets.map((image) => [image.id, image]));
+
+export const levelCards: LevelCard[] = puzzleLevels.map((level) => ({
+  id: level.id,
+  title: level.title,
+  difficulty: level.difficulty,
+  imageSrc: imageById.get(level.imageId)?.src,
+  rings: level.rings,
+  ticks: level.ticks,
+  bestStars: level.id === fixtureLevel.id ? 3 : 0,
+  bestMoves: level.id === fixtureLevel.id ? 24 : null,
+  hintsAvailable: level.showCouplingHints,
+  locked: false,
+}));
 
 export const collectionItems: CollectionItem[] = defaultImagePresets;
 

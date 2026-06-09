@@ -7,7 +7,7 @@ import { DifficultyName } from "../types";
 type LevelSelectionProps = {
   difficulty: DifficultyName;
   onBack: () => void;
-  onStart: () => void;
+  onStart: (levelId: string) => void;
 };
 
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
@@ -33,11 +33,17 @@ export function LevelSelection({ difficulty, onBack, onStart }: LevelSelectionPr
           {cards.map((level) => (
             <article className={`level-card ${level.locked ? "level-card--locked" : ""}`} key={level.id}>
               <div className="level-thumb" aria-hidden="true">
-                {level.locked ? <Lock size={28} /> : <span className="thumb-rings" />}
+                {level.locked ? (
+                  <Lock size={28} />
+                ) : level.imageSrc ? (
+                  <img src={level.imageSrc} alt="" />
+                ) : (
+                  <span className="thumb-rings" />
+                )}
               </div>
               <div className="level-card__body">
                 <h2>{level.title}</h2>
-                <p>{level.title === "Moon Gate Archive" ? "Playable shell" : "Locked preview"}</p>
+                <p>{level.locked ? "Locked preview" : "Playable puzzle"}</p>
                 <div className="level-meta">
                   <span>
                     <Star aria-hidden="true" size={14} /> {level.bestStars}
@@ -51,7 +57,7 @@ export function LevelSelection({ difficulty, onBack, onStart }: LevelSelectionPr
               <IconButton
                 icon={Play}
                 label={level.locked ? `${level.title} locked` : `Start ${level.title}`}
-                onClick={onStart}
+                onClick={() => onStart(level.id)}
                 disabled={level.locked}
                 variant={level.locked ? "ghost" : "primary"}
               />
