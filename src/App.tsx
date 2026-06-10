@@ -8,7 +8,8 @@ import { PuzzleScreen } from "./ui/screens/PuzzleScreen";
 import { AppSettings, defaultAppSettings, SettingsOverlay } from "./ui/screens/SettingsOverlay";
 import { WinScreen, WinResult } from "./ui/screens/WinScreen";
 import { defaultImagePresets, fixtureLevel } from "./ui/fixtureData";
-import { DifficultyName, PuzzleImageSource } from "./ui/types";
+import { generateLevelFixture, levelImageId, LEVELS_PER_DIFFICULTY } from "./ui/levelAdapter";
+import { DifficultyName, PuzzleImageSource, PuzzleLevelFixture } from "./ui/types";
 import { BEST_SCORE_STORAGE_PREFIXES_TO_CLEAR, SETTINGS_STORAGE_KEY } from "./persistence/storageKeys";
 
 type AppScreen = "menu" | "difficulty" | "levels" | "collection" | "puzzle";
@@ -48,6 +49,8 @@ export function App() {
   const [settings, setSettings] = useState<AppSettings>(() => readStoredSettings());
   const [result, setResult] = useState<WinResult | null>(null);
   const [puzzleSessionId, setPuzzleSessionId] = useState(0);
+  const [currentLevel, setCurrentLevel] = useState<PuzzleLevelFixture>(() => fixtureLevel);
+  const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
   const imageChoices = useMemo(() => [...defaultImagePresets, ...uploadedImages], [uploadedImages]);
   const selectedImage = imageChoices.find((image) => image.id === selectedImageId) ?? defaultImagePresets[0];
 
@@ -84,11 +87,34 @@ export function App() {
     setScreen("levels");
   };
 
-  const startPuzzle = () => {
+  const startLevel = (level: PuzzleLevelFixture, index: number, autoImageId?: string) => {
+    gameAudio.playSfx("uiSelect");
+    setCurrentLevel(level);
+    setCurrentLevelIndex(index);
+    if (autoImageId) {
+      setSelectedImageId(autoImageId);
+    }
+    setResult(null);
+    setPuzzleSessionId((sessionId) => sessionId + 1);
+    setScreen("puzzle");
+  };
+
+  const quickPlay = () => {
+    startLevel(fixtureLevel, 0);
+  };
+
+  const replayPuzzle = () => {
     gameAudio.playSfx("uiSelect");
     setResult(null);
     setPuzzleSessionId((sessionId) => sessionId + 1);
     setScreen("puzzle");
+  };
+
+  const nextPuzzle = () => {
+    const nextIndex = (currentLevelIndex + 1) % LEVELS_PER_DIFFICULTY;
+    const level = generateLevelFixture(selectedDifficulty, nextIndex);
+    const imageId = levelImageId(selectedDifficulty, nextIndex);
+    startLevel(level, nextIndex, imageId);
   };
 
   const addUploadedImage = (file: File, dataUrl: string) => {
@@ -143,8 +169,8 @@ export function App() {
     >
       {screen === "menu" ? (
         <MainMenu
-          onPlay={startPuzzle}
-          onDaily={startPuzzle}
+          onPlay={quickPlay}
+          onDaily={quickPlay}
           dailyDisabled
           onDifficulty={() => openScreen("difficulty")}
           onCollection={() => openScreen("collection")}
@@ -163,7 +189,7 @@ export function App() {
         <LevelSelection
           difficulty={selectedDifficulty}
           onBack={() => goBack("difficulty")}
-          onStart={startPuzzle}
+          onStart={(level, index, imageId) => startLevel(level, index, imageId)}
         />
       ) : null}
 
@@ -177,14 +203,14 @@ export function App() {
             setSelectedImageId(imageId);
           }}
           onUploadImage={addUploadedImage}
-          onStart={startPuzzle}
+          onStart={quickPlay}
         />
       ) : null}
 
       {screen === "puzzle" ? (
         <PuzzleScreen
           key={`${selectedImage.id}-${puzzleSessionId}`}
-          level={fixtureLevel}
+          level={currentLevel}
           imageSrc={selectedImage.src}
           imageTitle={selectedImage.title}
           inputBlocked={settingsOpen || result !== null}
@@ -215,8 +241,8 @@ export function App() {
       {result ? (
         <WinScreen
           result={result}
-          onNext={startPuzzle}
-          onRetry={startPuzzle}
+          onNext={nextPuzzle}
+          onRetry={replayPuzzle}
           onMenu={() => {
             gameAudio.playSfx("uiBack");
             setResult(null);

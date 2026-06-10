@@ -156,6 +156,31 @@ test("win screen exposes scoring and next action", async ({ page }) => {
   expect(playAgainBox!.y + playAgainBox!.height).toBeLessThanOrEqual(viewport?.height ?? 0);
 });
 
+test("difficulty selection flows through to a real generated puzzle", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Difficulty selection" }).click();
+  await expect(page.getByRole("heading", { name: "Difficulty" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Open Beginner levels" }).click();
+  await expect(page.getByRole("heading", { name: "Beginner Levels" })).toBeVisible();
+
+  const firstCard = page.getByRole("article").first();
+  await expect(firstCard.getByRole("heading", { level: 2 })).toBeVisible();
+
+  const firstStartButton = firstCard.getByRole("button", { name: /^Start / });
+  await firstStartButton.click();
+
+  await expect(page.getByTestId("puzzle-stage")).toBeVisible();
+  const canvas = page.getByTestId("puzzle-canvas");
+  await expect(canvas).toBeVisible();
+  // Beginner difficulty has 3 rings
+  await expect(canvas).toHaveAttribute("data-ring-count", "3");
+  // Ticks is 8 for beginner
+  await expect(canvas).toHaveAttribute("data-ticks", "8");
+  await expect(page.getByTestId("puzzle-stage")).toHaveAttribute("data-input-gated", "false");
+});
+
 test("image collection supports generated presets and image upload", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Image collection" }).click();

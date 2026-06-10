@@ -13,3 +13,5 @@ playwright.config.js
 playwright.config.d.ts
 .DS_Store
 output
+.agents
+CLAUDE.md

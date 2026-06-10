@@ -1,14 +1,15 @@
 import { describe, expect, test } from "vitest";
 import { matMulMod, matVecMod } from "../src/math/matrix";
 import { modNorm } from "../src/math/mod";
-import { scoreDifficulty, withinDifficultyBounds } from "../src/math/difficulty";
+import { DIFFICULTY_CONFIGS, scoreDifficulty, withinDifficultyBounds } from "../src/math/difficulty";
 import {
   createSeededRng,
   generateLevel,
   generateTriangularMatrix,
   sampleSolution,
 } from "../src/generation/levelGenerator";
-import type { DifficultyConfig } from "../src/state/types";
+import { generateLevelFixture, LEVELS_PER_DIFFICULTY } from "../src/ui/levelAdapter";
+import type { DifficultyConfig, DifficultyName } from "../src/state/types";
 
 const TEST_CONFIG: DifficultyConfig = {
   n: 4,
@@ -94,5 +95,59 @@ describe("level generation", () => {
         q: first.q,
       })
     ).toEqual(first.difficulty);
+  });
+});
+
+describe("production level catalog balance", () => {
+  const difficulties: DifficultyName[] = ["beginner", "easy", "medium", "hard", "expert"];
+
+  for (const difficulty of difficulties) {
+    const config = DIFFICULTY_CONFIGS[difficulty]!;
+
+    test(`all ${LEVELS_PER_DIFFICULTY} ${difficulty} levels are solvable and within bounds`, () => {
+      for (let i = 0; i < LEVELS_PER_DIFFICULTY; i++) {
+        const fixture = generateLevelFixture(difficulty, i);
+
+        // Ring and tick counts match difficulty config
+        expect(fixture.rings, `level ${i} rings`).toBe(config.n);
+        expect(fixture.ticks, `level ${i} ticks`).toBe(config.q);
+
+        // Applying solution must zero out all offsets
+        const offsets = [...fixture.initialOffsets];
+        const matrix: number[][] = Array.from({ length: fixture.rings }, (_, row) =>
+          Array.from({ length: fixture.rings }, (_, col) => (row === col ? 1 : 0))
+        );
+        for (const edge of fixture.edges) {
+          const v = edge.visualRing - 1;
+          const c = edge.controlRing - 1;
+          if (matrix[v] !== undefined) matrix[v]![c] = edge.factor;
+        }
+        const applied = matVecMod(matrix, fixture.solution, fixture.ticks);
+        const result = offsets.map((o, i) => modNorm(o + (applied[i] ?? 0), fixture.ticks));
+        expect(result, `level ${i} solution zeroes offsets`).toEqual(Array(fixture.rings).fill(0));
+
+        // Puzzle is not trivially pre-solved
+        expect(fixture.initialOffsets.some((o) => o !== 0), `level ${i} starts scrambled`).toBe(true);
+      }
+    });
+  }
+
+  test("all 30 catalog levels have distinct ids", () => {
+    const ids = difficulties.flatMap((d) =>
+      Array.from({ length: LEVELS_PER_DIFFICULTY }, (_, i) => generateLevelFixture(d, i).id)
+    );
+    expect(new Set(ids).size).toBe(difficulties.length * LEVELS_PER_DIFFICULTY);
+  });
+
+  test("easy levels have more coupling than beginner", () => {
+    const begEdges = Array.from({ length: LEVELS_PER_DIFFICULTY }, (_, i) =>
+      generateLevelFixture("beginner", i).edges.length
+    );
+    const easyEdges = Array.from({ length: LEVELS_PER_DIFFICULTY }, (_, i) =>
+      generateLevelFixture("easy", i).edges.length
+    );
+    const avgBeg = begEdges.reduce((a, b) => a + b, 0) / LEVELS_PER_DIFFICULTY;
+    const avgEasy = easyEdges.reduce((a, b) => a + b, 0) / LEVELS_PER_DIFFICULTY;
+    expect(avgEasy).toBeGreaterThan(avgBeg);
   });
 });
