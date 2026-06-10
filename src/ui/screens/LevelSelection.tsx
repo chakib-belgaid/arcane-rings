@@ -1,16 +1,8 @@
 import { ArrowLeft, Play, Star } from "lucide-react";
 
 import { IconButton } from "../components/IconButton";
-import {
-  LEVELS_PER_DIFFICULTY,
-  difficultyRings,
-  difficultyTicks,
-  generateLevelFixture,
-  levelId,
-  levelImageId,
-  levelTitle,
-} from "../levelAdapter";
-import { defaultImagePresets } from "../fixtureData";
+import { LEVELS_PER_DIFFICULTY, generateLevelFixture } from "../levelAdapter";
+import { defaultImagePresets, levelCards, puzzleLevels } from "../fixtureData";
 import type { DifficultyName, PuzzleLevelFixture } from "../types";
 
 type LevelSelectionProps = {
@@ -18,6 +10,17 @@ type LevelSelectionProps = {
   onBack: () => void;
   onStart: (level: PuzzleLevelFixture, index: number, imageId: string) => void;
 };
+
+type LevelOption = {
+  level: PuzzleLevelFixture;
+  index: number;
+  imageSrc: string | null;
+  bestStars: number;
+  bestMoves: number | null;
+};
+
+const imageSourceById = new Map(defaultImagePresets.map((image) => [image.id, image.src]));
+const levelCardById = new Map(levelCards.map((level) => [level.id, level]));
 
 function titleCase(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -45,22 +48,31 @@ function readBestStars(levelId: string): number {
   }
 }
 
+function toLevelOption(level: PuzzleLevelFixture, index: number): LevelOption {
+  const levelCard = levelCardById.get(level.id);
+  return {
+    level,
+    index,
+    imageSrc: imageSourceById.get(level.imageId) ?? null,
+    bestStars: Math.max(readBestStars(level.id), levelCard?.bestStars ?? 0),
+    bestMoves: levelCard?.bestMoves ?? null,
+  };
+}
+
+function levelOptionsForDifficulty(difficulty: DifficultyName): LevelOption[] {
+  const catalogLevels = puzzleLevels.filter((level) => level.difficulty === difficulty);
+  if (catalogLevels.length > 0) {
+    return catalogLevels.map(toLevelOption);
+  }
+
+  return Array.from({ length: LEVELS_PER_DIFFICULTY }, (_, index) =>
+    toLevelOption(generateLevelFixture(difficulty, index), index)
+  );
+}
+
 export function LevelSelection({ difficulty, onBack, onStart }: LevelSelectionProps) {
   const trackLabel = titleCase(difficulty);
-  const rings = difficultyRings(difficulty);
-  const ticks = difficultyTicks(difficulty);
-  const showHints = difficulty === "beginner" || difficulty === "easy";
-
-  const levelStubs = Array.from({ length: LEVELS_PER_DIFFICULTY }, (_, i) => {
-    const imgId = levelImageId(difficulty, i);
-    return {
-      id: levelId(difficulty, i),
-      title: levelTitle(difficulty, i),
-      index: i,
-      imageId: imgId,
-      imageSrc: defaultImagePresets.find((p) => p.id === imgId)?.src ?? null,
-    };
-  });
+  const levelOptions = levelOptionsForDifficulty(difficulty);
 
   return (
     <main className="screen-band">
@@ -69,41 +81,36 @@ export function LevelSelection({ difficulty, onBack, onStart }: LevelSelectionPr
         <h1>{trackLabel} Levels</h1>
       </header>
       <section className="level-grid" aria-label={`${trackLabel} level cards`}>
-        {levelStubs.map(({ id, title, index, imageId, imageSrc }) => {
-          const bestStars = readBestStars(id);
-          return (
-            <article className="level-card" key={id}>
-              <div className="level-thumb" aria-hidden="true">
-                {imageSrc ? (
-                  <img src={imageSrc} alt="" className="thumb-image" />
+        {levelOptions.map(({ level, index, imageSrc, bestStars, bestMoves }) => (
+          <article className="level-card" key={level.id}>
+            <div className="level-thumb" aria-hidden="true">
+              {imageSrc ? <img src={imageSrc} alt="" /> : <span className="thumb-rings" />}
+            </div>
+            <div className="level-card__body">
+              <h2>{level.title}</h2>
+              <p>Playable puzzle</p>
+              <div className="level-meta">
+                {bestStars > 0 ? (
+                  <span>
+                    <Star aria-hidden="true" size={14} /> {bestStars}
+                  </span>
                 ) : (
-                  <span className="thumb-rings" />
+                  <span>Not played</span>
                 )}
+                <span>{`Rings ${level.rings}`}</span>
+                <span>{`Ticks ${level.ticks}`}</span>
+                <span>{bestMoves === null ? "Best moves --" : `Best moves ${bestMoves}`}</span>
+                <span>{level.showCouplingHints ? "Hints available" : "No coupling hints"}</span>
               </div>
-              <div className="level-card__body">
-                <h2>{title}</h2>
-                <div className="level-meta">
-                  {bestStars > 0 ? (
-                    <span>
-                      <Star aria-hidden="true" size={14} /> {bestStars}
-                    </span>
-                  ) : (
-                    <span>Not played</span>
-                  )}
-                  <span>{`Rings ${rings}`}</span>
-                  <span>{`Ticks ${ticks}`}</span>
-                  <span>{showHints ? "Hints available" : "No coupling hints"}</span>
-                </div>
-              </div>
-              <IconButton
-                icon={Play}
-                label={`Start ${title}`}
-                onClick={() => onStart(generateLevelFixture(difficulty, index), index, imageId)}
-                variant="primary"
-              />
-            </article>
-          );
-        })}
+            </div>
+            <IconButton
+              icon={Play}
+              label={`Start ${level.title}`}
+              onClick={() => onStart(level, index, level.imageId)}
+              variant="primary"
+            />
+          </article>
+        ))}
       </section>
     </main>
   );

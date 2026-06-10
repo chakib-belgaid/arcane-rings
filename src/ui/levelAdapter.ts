@@ -43,10 +43,11 @@ export function difficultyTicks(difficulty: DifficultyName): number {
 export function generateLevelFixture(difficulty: DifficultyName, index: number): PuzzleLevelFixture {
   const id = levelId(difficulty, index);
   const title = levelTitle(difficulty, index);
+  const imageId = levelImageId(difficulty, index);
 
   const generated = generateLevel({
     id,
-    imageId: "",
+    imageId,
     seed: `${id}-v1`,
     difficultyName: difficulty as StateDifficultyName,
     showReferenceThumbnail: true,
@@ -71,6 +72,7 @@ export function generateLevelFixture(difficulty: DifficultyName, index: number):
 
   return {
     id,
+    imageId,
     title,
     difficulty,
     rings: generated.n,

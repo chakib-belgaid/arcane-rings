@@ -7,8 +7,8 @@ import { ImageCollection } from "./ui/screens/ImageCollection";
 import { PuzzleScreen } from "./ui/screens/PuzzleScreen";
 import { AppSettings, defaultAppSettings, SettingsOverlay } from "./ui/screens/SettingsOverlay";
 import { WinScreen, WinResult } from "./ui/screens/WinScreen";
-import { defaultImagePresets, fixtureLevel } from "./ui/fixtureData";
-import { generateLevelFixture, levelImageId, LEVELS_PER_DIFFICULTY } from "./ui/levelAdapter";
+import { defaultImagePresets, fixtureLevel, puzzleLevels } from "./ui/fixtureData";
+import { generateLevelFixture, LEVELS_PER_DIFFICULTY } from "./ui/levelAdapter";
 import { DifficultyName, PuzzleImageSource, PuzzleLevelFixture } from "./ui/types";
 import { BEST_SCORE_STORAGE_PREFIXES_TO_CLEAR, SETTINGS_STORAGE_KEY } from "./persistence/storageKeys";
 
@@ -38,6 +38,14 @@ function normalizeStoredVolume(volume: unknown) {
   }
 
   return Math.min(1, Math.max(0, volume));
+}
+
+function catalogLevelIndex(level: PuzzleLevelFixture): number {
+  const levels = puzzleLevels.filter((candidate) => candidate.difficulty === level.difficulty);
+  return Math.max(
+    0,
+    levels.findIndex((candidate) => candidate.id === level.id)
+  );
 }
 
 export function App() {
@@ -87,34 +95,49 @@ export function App() {
     setScreen("levels");
   };
 
-  const startLevel = (level: PuzzleLevelFixture, index: number, autoImageId?: string) => {
+  const startLevel = (level: PuzzleLevelFixture, index: number, imageId: string) => {
     gameAudio.playSfx("uiSelect");
     setCurrentLevel(level);
     setCurrentLevelIndex(index);
-    if (autoImageId) {
-      setSelectedImageId(autoImageId);
-    }
+    setSelectedDifficulty(level.difficulty);
+    setSelectedImageId(imageId);
     setResult(null);
     setPuzzleSessionId((sessionId) => sessionId + 1);
     setScreen("puzzle");
   };
 
   const quickPlay = () => {
-    startLevel(fixtureLevel, 0);
+    startLevel(fixtureLevel, catalogLevelIndex(fixtureLevel), fixtureLevel.imageId);
   };
 
   const replayPuzzle = () => {
-    gameAudio.playSfx("uiSelect");
-    setResult(null);
-    setPuzzleSessionId((sessionId) => sessionId + 1);
-    setScreen("puzzle");
+    startLevel(currentLevel, currentLevelIndex, selectedImage.id);
   };
 
   const nextPuzzle = () => {
+    const catalogLevels = puzzleLevels.filter((level) => level.difficulty === currentLevel.difficulty);
+    const catalogIndex = catalogLevels.findIndex((level) => level.id === currentLevel.id);
+
+    if (catalogIndex >= 0 && catalogLevels.length > 0) {
+      const nextIndex = (catalogIndex + 1) % catalogLevels.length;
+      const nextLevel = catalogLevels[nextIndex] ?? fixtureLevel;
+      startLevel(nextLevel, nextIndex, nextLevel.imageId);
+      return;
+    }
+
     const nextIndex = (currentLevelIndex + 1) % LEVELS_PER_DIFFICULTY;
-    const level = generateLevelFixture(selectedDifficulty, nextIndex);
-    const imageId = levelImageId(selectedDifficulty, nextIndex);
-    startLevel(level, nextIndex, imageId);
+    const nextLevel = generateLevelFixture(currentLevel.difficulty, nextIndex);
+    startLevel(nextLevel, nextIndex, nextLevel.imageId);
+  };
+
+  const startImagePuzzle = () => {
+    const matchingLevel = puzzleLevels.find((level) => level.imageId === selectedImage.id);
+    if (matchingLevel) {
+      startLevel(matchingLevel, catalogLevelIndex(matchingLevel), matchingLevel.imageId);
+      return;
+    }
+
+    startLevel(fixtureLevel, catalogLevelIndex(fixtureLevel), selectedImage.id);
   };
 
   const addUploadedImage = (file: File, dataUrl: string) => {
@@ -203,7 +226,7 @@ export function App() {
             setSelectedImageId(imageId);
           }}
           onUploadImage={addUploadedImage}
-          onStart={quickPlay}
+          onStart={startImagePuzzle}
         />
       ) : null}
 

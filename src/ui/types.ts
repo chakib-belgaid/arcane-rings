@@ -14,6 +14,7 @@ export type LevelCard = {
   id: string;
   title: string;
   difficulty: DifficultyName;
+  imageSrc?: string;
   rings: number;
   ticks: number;
   bestStars: number;
@@ -30,6 +31,7 @@ export type CouplingEdge = {
 
 export type PuzzleLevelFixture = {
   id: string;
+  imageId: string;
   title: string;
   difficulty: DifficultyName;
   rings: number;
